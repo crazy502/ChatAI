@@ -26,6 +26,8 @@ go.work
 
 # Environment
 .env
+# Configuration files
+config.toml
 
 # Node modules
 node_modules/
