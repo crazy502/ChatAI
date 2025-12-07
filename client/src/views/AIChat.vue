@@ -484,7 +484,7 @@ export default {
 .ai-chat-container {
   height: 100vh;
   display: flex;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #ffffff;
   position: relative;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
@@ -514,8 +514,7 @@ export default {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(15px);
+  background: #ffffff;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.08);
   position: relative;
@@ -585,17 +584,20 @@ export default {
   transition: all 0.2s ease;
   position: relative;
   color: #2c3e50;
+  background: #f9fafb; /* 浅灰色背景 */
+  border-left: 4px solid rgba(0, 0, 0, 0.06); /* 浅灰色左侧边框 */
 }
 
 .session-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #818cf8 100%);
   color: white;
   font-weight: 600;
   box-shadow: inset 0 0 20px rgba(102, 126, 234, 0.2);
 }
 
 .session-item:hover {
-  background: rgba(102, 126, 234, 0.06);
+  background: #e6f7ff; /* 浅蓝色背景 */
+  color: #1a1a1a; /* 深色文字 */
   transform: translateX(4px);
 }
 
@@ -742,7 +744,7 @@ export default {
   align-self: flex-start;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(4px);
-  color: #2c3e50;
+  color: #000000;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
