@@ -15,14 +15,10 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/uuid v1.6.0
 	github.com/streadway/amqp v1.1.0
-	// github.com/yalue/onnxruntime_go v1.22.0  // 暂时注释掉 ONNX 依赖，因为其在 Windows 上有问题
-	golang.org/x/image v0.32.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.31.0
 )
-
-require github.com/yalue/onnxruntime_go v1.23.0
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect

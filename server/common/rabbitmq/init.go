@@ -11,8 +11,9 @@ func InitRabbitMQ() {
 	// 不同队列共用一个连接，可以保持不同队列消费消息的顺序
 
 	RMQMessage = NewWorkRabbitMQ("Message")
-	go RMQMessage.Consume(MQMessage)
-
+	if RMQMessage != nil {
+		go RMQMessage.Consume(MQMessage)
+	}
 }
 
 // DestroyRabbitMQ 销毁RabbitMQ

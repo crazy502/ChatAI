@@ -24,7 +24,8 @@ func initConn() {
 	var err error
 	conn, err = amqp.Dial(mqUrl)
 	if err != nil {
-		log.Fatalf("RabbitMQ connection failed: %v", err) // 输出错误并退出程序
+		log.Printf("RabbitMQ connection failed: %v", err)
+		return
 	}
 }
 
@@ -54,7 +55,7 @@ func NewWorkRabbitMQ(queue string) *RabbitMQ {
 
 	// get connection
 	if conn == nil {
-		initConn()
+		return nil
 	}
 	rabbitmq.conn = conn
 
