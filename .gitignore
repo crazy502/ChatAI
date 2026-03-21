@@ -41,3 +41,8 @@ client/build/
 
 # macOS
 .DS_Store
+
+# Custom folders
+modify/
+GraduationThesis/
+GPTest/
