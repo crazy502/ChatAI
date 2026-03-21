@@ -31,8 +31,8 @@ func readDataFromDB() error {
 	// 遍历数据库消息
 	for i := range msgs {
 		m := &msgs[i]
-		//默认openai模型
-		modelType := "1"
+		// 默认使用 QWEN 模型
+		modelType := "qwen"
 		config := make(map[string]interface{})
 
 		// 创建对应的 AIHelper

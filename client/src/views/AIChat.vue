@@ -25,7 +25,8 @@
         <button class="sync-btn" @click="syncHistory" :disabled="!currentSessionId || tempSession">同步历史数据</button>
         <label for="modelType">选择模型：</label>
         <select id="modelType" v-model="selectedModel" class="model-select">
-          <option value="1">阿里百炼</option>
+          <option value="qwen">阿里百炼 (QWEN)</option>
+          <option value="deepseek">深度求索 (DeepSeek)</option>
         </select>
         <label for="streamingMode" style="margin-left: 20px;">
           <input type="checkbox" id="streamingMode" v-model="isStreaming" />
@@ -89,7 +90,7 @@ export default {
     const loading = ref(false)
     const messagesRef = ref(null)
     const messageInput = ref(null)
-    const selectedModel = ref('1')
+    const selectedModel = ref('qwen')
     const isStreaming = ref(false)
 
 
