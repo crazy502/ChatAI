@@ -1,38 +1,52 @@
-<template>
+﻿<template>
   <div id="app">
-    <!-- 页面加载动画 -->
     <div v-if="isLoading" class="page-loading">
       <div class="loading-spinner">
         <div class="spinner-ring"></div>
         <div class="spinner-ring"></div>
         <div class="spinner-ring"></div>
       </div>
-      <div class="loading-text">SYSTEM INITIALIZING</div>
+      <div class="loading-text">GOPHERAI INITIALIZING</div>
     </div>
-    
-    <router-view v-slot="{ Component }">
+
+    <router-view v-slot="{ Component, route }">
       <transition name="page" mode="out-in">
-        <component :is="Component" />
+        <component :is="Component" :key="route.fullPath" />
       </transition>
     </router-view>
+
+    <AppToastContainer />
+    <AppConfirmDialog />
   </div>
 </template>
 
 <script>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import AppToastContainer from './components/ui/AppToastContainer.vue'
+import AppConfirmDialog from './components/ui/AppConfirmDialog.vue'
 
 export default {
   name: 'App',
+  components: {
+    AppToastContainer,
+    AppConfirmDialog
+  },
   setup() {
+    const router = useRouter()
     const isLoading = ref(true)
-    
-    onMounted(() => {
-      // 模拟系统初始化
-      setTimeout(() => {
+
+    onMounted(async () => {
+      const startedAt = performance.now()
+      await router.isReady()
+      const elapsed = performance.now() - startedAt
+      const remaining = Math.max(0, 320 - elapsed)
+
+      window.setTimeout(() => {
         isLoading.value = false
-      }, 1500)
+      }, remaining)
     })
-    
+
     return {
       isLoading
     }
@@ -47,32 +61,35 @@ export default {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   font-family: 'Rajdhani', 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #0a0a0f;
+  background: #f5fbf5;
 }
 
 #app {
   height: 100%;
 }
 
-/* 页面加载动画 */
 .page-loading {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%);
+  background:
+    radial-gradient(circle at top right, rgba(45, 212, 191, 0.2), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.18), transparent 25%),
+    linear-gradient(135deg, #f5fbf5 0%, #eef8f0 45%, #f8fcf8 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  transition: opacity 0.6s ease, visibility 0.6s ease;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
 }
 
 .page-loading.hidden {
@@ -89,7 +106,7 @@ html, body {
 .spinner-ring {
   position: absolute;
   border: 3px solid transparent;
-  border-top-color: #00d4ff;
+  border-top-color: #10b981;
   border-radius: 50%;
   animation: spinner-rotate 1.2s linear infinite;
 }
@@ -99,7 +116,7 @@ html, body {
   height: 100px;
   top: 0;
   left: 0;
-  border-top-color: #00d4ff;
+  border-top-color: #10b981;
 }
 
 .spinner-ring:nth-child(2) {
@@ -109,7 +126,7 @@ html, body {
   left: 12.5px;
   animation-direction: reverse;
   animation-duration: 0.9s;
-  border-top-color: #7b2cbf;
+  border-top-color: #2dd4bf;
 }
 
 .spinner-ring:nth-child(3) {
@@ -118,13 +135,14 @@ html, body {
   top: 25px;
   left: 25px;
   animation-duration: 0.6s;
-  border-top-color: #ff006e;
+  border-top-color: #84cc16;
 }
 
 @keyframes spinner-rotate {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -136,43 +154,41 @@ html, body {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 6px;
-  color: #00d4ff;
+  color: #10b981;
   animation: loading-text-pulse 1.5s ease-in-out infinite;
 }
 
 @keyframes loading-text-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.4;
-    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
   }
+
   50% {
     opacity: 1;
-    text-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+    text-shadow: 0 0 20px rgba(16, 185, 129, 0.45);
   }
 }
 
-/* 科幻页面切换动画 */
 .page-enter-active {
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .page-leave-active {
-  transition: all 0.4s cubic-bezier(0.7, 0, 0.84, 0);
+  transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
 .page-enter-from {
   opacity: 0;
-  transform: translateY(20px) scale(0.98);
-  filter: blur(10px);
+  transform: translateY(14px) scale(0.99);
 }
 
 .page-leave-to {
   opacity: 0;
-  transform: translateY(-20px) scale(1.02);
-  filter: blur(10px);
+  transform: translateY(-10px) scale(1.005);
 }
 
-/* 扫描线效果 */
 .page-enter-active::after {
   content: '';
   position: fixed;
@@ -180,8 +196,8 @@ html, body {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
-  animation: scan-line 0.5s ease-out;
+  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  animation: scan-line 0.45s ease-out;
   pointer-events: none;
   z-index: 9998;
 }
@@ -191,9 +207,25 @@ html, body {
     transform: translateY(-100vh);
     opacity: 1;
   }
+
   100% {
     transform: translateY(100vh);
     opacity: 0;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-loading,
+  .page-enter-active,
+  .page-leave-active {
+    transition: none !important;
+  }
+
+  .spinner-ring,
+  .loading-text,
+  .page-enter-active::after {
+    animation: none !important;
+  }
+}
 </style>
+
