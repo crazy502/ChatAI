@@ -48,9 +48,7 @@ func CreateSessionAndSendMessage(userName string, userQuestion string, modelType
 
 	//2：获取AIHelper并通过其管理消息
 	manager := aihelper.GetGlobalManager()
-	config := map[string]interface{}{
-		"apiKey": "your-api-key", // TODO: 从配置中获取
-	}
+	config := make(map[string]interface{})
 	helper, err := manager.GetOrCreateAIHelper(userName, createdSession.ID, modelType, config)
 	if err != nil {
 		log.Println("CreateSessionAndSendMessage GetOrCreateAIHelper error:", err)
@@ -90,9 +88,7 @@ func StreamMessageToExistingSession(userName string, sessionID string, userQuest
 	}
 
 	manager := aihelper.GetGlobalManager()
-	config := map[string]interface{}{
-		"apiKey": "your-api-key", // TODO: 从配置中获取
-	}
+	config := make(map[string]interface{})
 	helper, err := manager.GetOrCreateAIHelper(userName, sessionID, modelType, config)
 	if err != nil {
 		log.Println("StreamMessageToExistingSession GetOrCreateAIHelper error:", err)
@@ -147,9 +143,7 @@ func CreateStreamSessionAndSendMessage(userName string, userQuestion string, mod
 func ChatSend(userName string, sessionID string, userQuestion string, modelType string) (string, code.Code) {
 	//1：获取AIHelper
 	manager := aihelper.GetGlobalManager()
-	config := map[string]interface{}{
-		"apiKey": "your-api-key", // TODO: 从配置中获取
-	}
+	config := make(map[string]interface{})
 	helper, err := manager.GetOrCreateAIHelper(userName, sessionID, modelType, config)
 	if err != nil {
 		log.Println("ChatSend GetOrCreateAIHelper error:", err)

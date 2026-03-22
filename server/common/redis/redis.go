@@ -17,9 +17,9 @@ var ctx = context.Background()
 
 func Init() {
 	conf := config.GetConfig()
-	host := conf.RedisConfig.RedisHost
-	port := conf.RedisConfig.RedisPort
-	password := conf.RedisConfig.RedisPassword
+	host := conf.RedisHost
+	port := conf.RedisPort
+	password := conf.RedisPassword
 	db := conf.RedisDb
 	addr := host + ":" + strconv.Itoa(port)
 
@@ -29,6 +29,9 @@ func Init() {
 		DB:       db,
 	})
 
+	if _, err := Rdb.Ping(ctx).Result(); err != nil {
+		panic("Redis连接失败: " + err.Error())
+	}
 }
 
 func SetCaptchaForEmail(email, captcha string) error {
@@ -52,7 +55,6 @@ func CheckCaptchaForEmail(email, userInput string) (bool, error) {
 
 	if strings.EqualFold(storedCaptcha, userInput) {
 
-		// 验证成功后删除 key
 		if err := Rdb.Del(ctx, key).Err(); err != nil {
 
 		} else {

@@ -52,8 +52,8 @@ func readDataFromDB() error {
 
 func main() {
 	conf := config.GetConfig()
-	host := conf.MainConfig.Host
-	port := conf.MainConfig.Port
+	host := conf.Host
+	port := conf.Port
 	//初始化mysql
 	if err := mysql.InitMysql(); err != nil {
 		log.Println("InitMysql error , " + err.Error())

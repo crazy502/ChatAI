@@ -29,6 +29,18 @@ func IsExistUser(username string) (bool, *model.User) {
 	return true, user
 }
 
+// 检查邮箱是否已存在
+func IsExistEmail(email string) (bool, *model.User) {
+
+	user, err := mysql.GetUserByEmail(email)
+
+	if err == gorm.ErrRecordNotFound || user == nil {
+		return false, nil
+	}
+
+	return true, user
+}
+
 func Register(username, email, password string) (*model.User, bool) {
 	if user, err := mysql.InsertUser(&model.User{
 		Email:    email,

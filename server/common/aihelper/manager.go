@@ -32,9 +32,9 @@ func (m *AIHelperManager) GetOrCreateAIHelper(userName string, sessionID string,
 		m.helpers[userName] = userHelpers
 	}
 
-	// 检查会话是否已存在
+	// 检查会话是否已存在，并且模型类型是否匹配
 	helper, exists := userHelpers[sessionID]
-	if exists {
+	if exists && helper.GetModelType() == modelType {
 		return helper, nil
 	}
 

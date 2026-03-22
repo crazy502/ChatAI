@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
+	"server/config"
 	"strings"
 
 	"github.com/cloudwego/eino-ext/components/model/openai"
@@ -27,12 +27,13 @@ type QWENModel struct {
 }
 
 func NewQWENModel(ctx context.Context) (*QWENModel, error) {
-	key := os.Getenv("DASHSCOPE_API_KEY")
-	modelName := os.Getenv("QWEN_MODEL_NAME")
+	cfg := config.GetConfig()
+	key := cfg.QwenConfig.APIKey
+	modelName := cfg.QwenConfig.ModelName
 	if modelName == "" {
 		modelName = "qwen-plus"
 	}
-	baseURL := os.Getenv("QWEN_BASE_URL")
+	baseURL := cfg.QwenConfig.BaseURL
 	if baseURL == "" {
 		baseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 	}
@@ -90,12 +91,13 @@ type DeepSeekModel struct {
 }
 
 func NewDeepSeekModel(ctx context.Context) (*DeepSeekModel, error) {
-	key := os.Getenv("DEEPSEEK_API_KEY")
-	modelName := os.Getenv("DEEPSEEK_MODEL_NAME")
+	cfg := config.GetConfig()
+	key := cfg.DeepSeekConfig.APIKey
+	modelName := cfg.DeepSeekConfig.ModelName
 	if modelName == "" {
 		modelName = "deepseek-chat"
 	}
-	baseURL := os.Getenv("DEEPSEEK_BASE_URL")
+	baseURL := cfg.DeepSeekConfig.BaseURL
 	if baseURL == "" {
 		baseURL = "https://api.deepseek.com"
 	}

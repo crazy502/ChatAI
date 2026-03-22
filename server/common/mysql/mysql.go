@@ -16,14 +16,14 @@ import (
 var DB *gorm.DB
 
 func InitMysql() error {
-	host := config.GetConfig().MysqlHost
-	port := config.GetConfig().MysqlPort
-	dbname := config.GetConfig().MysqlDatabaseName
-	username := config.GetConfig().MysqlUser
-	password := config.GetConfig().MysqlPassword
-	charset := config.GetConfig().MysqlCharset
+	conf := config.GetConfig()
+	host := conf.MysqlHost
+	port := conf.MysqlPort
+	dbname := conf.MysqlDatabaseName
+	username := conf.MysqlUser
+	password := conf.MysqlPassword
+	charset := conf.MysqlCharset
 
-	//dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=true&loc=Local", username, password, host, port, dbname, charset)
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=true&loc=Local", username, password, host, port, dbname, charset)
 
 	var log logger.Interface
@@ -76,5 +76,11 @@ func InsertUser(user *model.User) (*model.User, error) {
 func GetUserByUsername(username string) (*model.User, error) {
 	user := new(model.User)
 	err := DB.Where("username = ?", username).First(user).Error
+	return user, err
+}
+
+func GetUserByEmail(email string) (*model.User, error) {
+	user := new(model.User)
+	err := DB.Where("email = ?", email).First(user).Error
 	return user, err
 }

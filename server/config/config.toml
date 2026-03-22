@@ -18,7 +18,7 @@ host = "127.0.0.1"
 port = 3306
 user = "root"
 password = "123456"
-databaseName = "GopherAI"
+databaseName = "AgentGo"
 charset =  "utf8mb4"
 
 [jwtConfig]
@@ -33,3 +33,13 @@ charset =  "utf8mb4"
   username= "root"
   password= "123456"
   vhost= "/"
+
+[qwenConfig]
+apiKey = "sk-2cd35d5c33e3415ba9f23ce67795364c"
+baseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+modelName = "qwen-plus"
+
+[deepseekConfig]
+apiKey = "sk-d126528801794cc5b47d96e83a80c2be"
+baseURL = "https://api.deepseek.com"
+modelName = "deepseek-chat"

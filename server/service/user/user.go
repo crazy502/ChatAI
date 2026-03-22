@@ -1,8 +1,8 @@
 package user
 
 import (
-	myemail "GopherAI/common/email"
-	myredis "GopherAI/common/redis"
+	myemail "server/common/email"
+	myredis "server/common/redis"
 	"server/common/code"
 	"server/dao/user"
 	"server/model"
@@ -37,12 +37,12 @@ func Register(email, password, captcha string) (string, code.Code) {
 	var userInformation *model.User
 
 	//1:先判断用户是否已经存在了
-	if ok, _ := user.IsExistUser(email); ok {
-		return "", code.CodeUserExist
+	if ok, _ = user.IsExistEmail(email); ok {
+		return "", code.CodeEmailExist
 	}
 
 	//2:从redis中验证验证码是否有效
-	if ok, _ := myredis.CheckCaptchaForEmail(email, captcha); !ok {
+	if ok, _ = myredis.CheckCaptchaForEmail(email, captcha); !ok {
 		return "", code.CodeInvalidCaptcha
 	}
 

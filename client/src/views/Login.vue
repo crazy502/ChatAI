@@ -1,111 +1,176 @@
 <template>
   <div class="login-container">
-    <el-card class="login-card">
-      <template #header>
-        <div class="card-header">
-          <h2>登录</h2>
+    <!-- 背景动画元素 -->
+    <div class="bg-animation">
+      <div class="bg-grid"></div>
+      <div class="bg-glow bg-glow-1"></div>
+      <div class="bg-glow bg-glow-2"></div>
+      <div class="bg-particles">
+        <span v-for="n in 20" :key="n" class="particle"></span>
+      </div>
+    </div>
+
+    <!-- 登录卡片 -->
+    <div class="login-card sci-fi-animate-slide-up">
+      <!-- 角标装饰 -->
+      <div class="corner top-left"></div>
+      <div class="corner top-right"></div>
+      <div class="corner bottom-left"></div>
+      <div class="corner bottom-right"></div>
+      
+      <!-- 扫描线效果 -->
+      <div class="scan-line"></div>
+
+      <div class="card-header">
+        <div class="logo">
+          <span class="logo-icon">◈</span>
+          <span class="logo-text">Agent Go</span>
         </div>
-      </template>
-      <el-form
-        ref="loginFormRef"
-        :model="loginForm"
-        :rules="loginRules"
-        label-width="80px"
-      >
-        <el-form-item label="用户名" prop="username">
-          <el-input
+        <h1 class="title">系统登录</h1>
+        <p class="subtitle">SYSTEM LOGIN // SECURE ACCESS</p>
+      </div>
+
+      <form class="login-form" @submit.prevent="handleLogin">
+        <div class="form-group">
+          <label class="form-label">
+            <span class="label-icon">◉</span>
+            用户名
+          </label>
+          <input
             v-model="loginForm.username"
-            placeholder="请输入用户名"
-          />
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input
-            v-model="loginForm.password"
-            placeholder="请输入密码"
-            type="password"
-            show-password
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button
-            type="primary"
-            :loading="loading"
-            @click="handleLogin"
-            style="width: 100%"
-          >
-            登录
-          </el-button>
-        </el-form-item>
-        <el-form-item>
-          <el-button
             type="text"
-            @click="$router.push('/register')"
-            style="width: 100%"
-          >
-            还没有账号？去注册
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+            class="sci-fi-input"
+            placeholder="请输入用户名"
+            required
+          />
+          <div class="input-glow"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <span class="label-icon">◈</span>
+            密码
+          </label>
+          <input
+            v-model="loginForm.password"
+            type="password"
+            class="sci-fi-input"
+            placeholder="请输入密码"
+            required
+          />
+          <div class="input-glow"></div>
+        </div>
+
+        <button
+          type="submit"
+          class="login-btn"
+          :class="{ 'loading': loading }"
+          :disabled="loading"
+        >
+          <span class="btn-text">{{ loading ? '验证中...' : '登 录' }}</span>
+          <span class="btn-glow"></span>
+          <div class="btn-particles" v-if="loading">
+            <span v-for="n in 3" :key="n" class="particle"></span>
+          </div>
+        </button>
+
+        <div class="form-footer">
+          <span class="footer-text">还没有访问权限？</span>
+          <a href="#" class="sci-fi-link" @click.prevent="goToRegister">
+            申请注册 →
+          </a>
+        </div>
+      </form>
+
+      <!-- 装饰性数据流 -->
+      <div class="data-stream">
+        <span v-for="n in 8" :key="n" class="data-bit">{{ Math.random() > 0.5 ? '1' : '0' }}</span>
+      </div>
+    </div>
+
+    <!-- 底部信息 -->
+    <div class="footer-info">
+      <span class="version">v2.0.1</span>
+      <span class="divider">|</span>
+      <span class="status">
+        <span class="status-dot"></span>
+        系统在线
+      </span>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import api from '../utils/api'
 
 export default {
   name: 'LoginView',
   setup() {
     const router = useRouter()
-    const loginFormRef = ref()
     const loading = ref(false)
-    const loginForm = ref({
+    const loginForm = reactive({
       username: '',
       password: ''
     })
 
-    const loginRules = {
-      username: [
-        { required: true, message: '请输入用户名', trigger: 'blur' }
-      ],
-      password: [
-        { required: true, message: '请输入密码', trigger: 'blur' },
-        { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
-      ]
-    }
-
     const handleLogin = async () => {
+      if (!loginForm.username || !loginForm.password) {
+        showMessage('请输入用户名和密码', 'error')
+        return
+      }
+
       try {
-        await loginFormRef.value.validate()
         loading.value = true
         const response = await api.post('/user/login', {
-          username: loginForm.value.username,
-          password: loginForm.value.password
+          username: loginForm.username,
+          password: loginForm.password
         })
+        
         if (response.data.status_code === 1000) {
           localStorage.setItem('token', response.data.token)
-          ElMessage.success('登录成功')
-          router.push('/menu')
+          showMessage('身份验证通过', 'success')
+          setTimeout(() => {
+            router.push('/menu')
+          }, 800)
         } else {
-          ElMessage.error(response.data.status_msg || '登录失败')
+          showMessage(response.data.status_msg || '验证失败', 'error')
         }
       } catch (error) {
         console.error('Login error:', error)
-        ElMessage.error('登录失败，请重试')
+        showMessage('连接异常，请重试', 'error')
       } finally {
         loading.value = false
       }
     }
 
+    const goToRegister = () => {
+      router.push('/register')
+    }
+
+    const showMessage = (message, type) => {
+      // 创建自定义消息提示
+      const msgEl = document.createElement('div')
+      msgEl.className = `sci-fi-message ${type}`
+      msgEl.innerHTML = `
+        <span class="msg-icon">${type === 'success' ? '✓' : '✗'}</span>
+        <span class="msg-text">${message}</span>
+      `
+      document.body.appendChild(msgEl)
+      
+      setTimeout(() => msgEl.classList.add('show'), 10)
+      setTimeout(() => {
+        msgEl.classList.remove('show')
+        setTimeout(() => document.body.removeChild(msgEl), 300)
+      }, 3000)
+    }
+
     return {
-      loginFormRef,
       loading,
       loginForm,
-      loginRules,
-      handleLogin
+      handleLogin,
+      goToRegister
     }
   }
 }
@@ -113,124 +178,609 @@ export default {
 
 <style scoped>
 .login-container {
+  min-height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
+  overflow: hidden;
+  background: var(--sci-fi-bg-dark);
+}
+
+/* 背景动画 */
+.bg-animation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+  0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+  100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
+}
+
+.bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  animation: glowPulse 4s ease-in-out infinite;
+}
+
+.bg-glow-1 {
+  width: 400px;
+  height: 400px;
+  background: var(--sci-fi-primary);
+  top: -100px;
+  right: -100px;
+}
+
+.bg-glow-2 {
+  width: 300px;
+  height: 300px;
+  background: var(--sci-fi-secondary);
+  bottom: -50px;
+  left: -50px;
+  animation-delay: 2s;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.1; transform: scale(1); }
+  50% { opacity: 0.2; transform: scale(1.1); }
+}
+
+.bg-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--sci-fi-primary);
+  border-radius: 50%;
+  animation: particleFloat 15s infinite;
+  opacity: 0.6;
+}
+
+.particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; }
+.particle:nth-child(2) { left: 20%; top: 80%; animation-delay: 1s; }
+.particle:nth-child(3) { left: 30%; top: 40%; animation-delay: 2s; }
+.particle:nth-child(4) { left: 40%; top: 60%; animation-delay: 3s; }
+.particle:nth-child(5) { left: 50%; top: 30%; animation-delay: 4s; }
+.particle:nth-child(6) { left: 60%; top: 70%; animation-delay: 5s; }
+.particle:nth-child(7) { left: 70%; top: 50%; animation-delay: 6s; }
+.particle:nth-child(8) { left: 80%; top: 20%; animation-delay: 7s; }
+.particle:nth-child(9) { left: 90%; top: 80%; animation-delay: 8s; }
+.particle:nth-child(10) { left: 15%; top: 60%; animation-delay: 9s; }
+.particle:nth-child(11) { left: 25%; top: 30%; animation-delay: 10s; }
+.particle:nth-child(12) { left: 35%; top: 70%; animation-delay: 11s; }
+.particle:nth-child(13) { left: 45%; top: 40%; animation-delay: 12s; }
+.particle:nth-child(14) { left: 55%; top: 80%; animation-delay: 13s; }
+.particle:nth-child(15) { left: 65%; top: 20%; animation-delay: 14s; }
+.particle:nth-child(16) { left: 75%; top: 60%; animation-delay: 0.5s; }
+.particle:nth-child(17) { left: 85%; top: 40%; animation-delay: 1.5s; }
+.particle:nth-child(18) { left: 5%; top: 50%; animation-delay: 2.5s; }
+.particle:nth-child(19) { left: 95%; top: 30%; animation-delay: 3.5s; }
+.particle:nth-child(20) { left: 50%; top: 90%; animation-delay: 4.5s; }
+
+@keyframes particleFloat {
+  0%, 100% { 
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  50% { 
+    transform: translateY(-100px) translateX(50px);
+  }
+}
+
+/* 登录卡片 */
+.login-card {
+  position: relative;
+  width: 420px;
+  padding: 48px 40px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
+  z-index: 1;
   overflow: hidden;
 }
 
-.login-container::before {
+.login-card::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="60" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="60" cy="30" r="1.5" fill="rgba(255,255,255,0.1)"/></svg>');
-  animation: float 20s ease-in-out infinite;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--sci-fi-primary), transparent);
+  animation: borderGlow 3s ease-in-out infinite;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(180deg); }
+@keyframes borderGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
-.login-card {
-  width: 420px;
+/* 角标 */
+.corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--sci-fi-primary);
+  transition: all 0.3s ease;
+}
+
+.corner.top-left {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.corner.top-right {
+  top: -1px;
+  right: -1px;
+  border-left: none;
+  border-bottom: none;
+}
+
+.corner.bottom-left {
+  bottom: -1px;
+  left: -1px;
+  border-right: none;
+  border-top: none;
+}
+
+.corner.bottom-right {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+.login-card:hover .corner {
+  width: 30px;
+  height: 30px;
+  box-shadow: 0 0 10px var(--sci-fi-primary);
+}
+
+/* 扫描线 */
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--sci-fi-primary), transparent);
+  animation: scanMove 3s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes scanMove {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(400px); }
+}
+
+/* 头部 */
+.card-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.logo-icon {
+  font-size: 32px;
+  color: var(--sci-fi-primary);
+  animation: iconPulse 2s ease-in-out infinite;
+  text-shadow: 0 0 20px var(--sci-fi-primary);
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.logo-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, var(--sci-fi-primary), var(--sci-fi-success));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 8px;
+  color: var(--sci-fi-text-primary);
+  margin-bottom: 8px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.subtitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: var(--sci-fi-text-muted);
+  text-transform: uppercase;
+}
+
+/* 表单 */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-group {
+  position: relative;
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sci-fi-text-secondary);
+  margin-bottom: 10px;
+}
+
+.label-icon {
+  color: var(--sci-fi-primary);
+  font-size: 10px;
+}
+
+.sci-fi-input {
+  width: 100%;
+  padding: 14px 18px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  color: var(--sci-fi-text-primary);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.sci-fi-input:focus {
+  border-color: var(--sci-fi-primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), 0 0 20px rgba(16, 185, 129, 0.2);
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  animation: slideIn 0.8s ease-out;
+}
+
+.sci-fi-input::placeholder {
+  color: var(--sci-fi-text-muted);
+}
+
+.input-glow {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--sci-fi-primary), transparent);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.sci-fi-input:focus ~ .input-glow {
+  width: 100%;
+}
+
+/* 登录按钮 */
+.login-btn {
+  position: relative;
+  padding: 16px 32px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--sci-fi-bg-dark);
+  background: linear-gradient(135deg, var(--sci-fi-primary), var(--sci-fi-success));
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  margin-top: 16px;
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+}
+
+.login-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-text {
   position: relative;
   z-index: 1;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.card-header {
-  text-align: center;
-  padding: 30px 0 20px 0;
-}
-
-.card-header h2 {
-  margin: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-size: 28px;
-  font-weight: 600;
-  animation: glow 2s ease-in-out infinite alternate;
-}
-
-@keyframes glow {
-  from { filter: brightness(1); }
-  to { filter: brightness(1.2); }
-}
-
-.el-form-item {
-  margin-bottom: 24px;
-}
-
-.el-input {
-  transition: all 0.3s ease;
-}
-
-.el-input:focus-within {
-  transform: scale(1.02);
-}
-
-.el-button {
-  height: 48px;
-  border-radius: 12px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.el-button::before {
-  content: '';
+.btn-glow {
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
 }
 
-.el-button:hover::before {
+.login-btn:hover .btn-glow {
   left: 100%;
 }
 
-.el-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(64, 158, 255, 0.3);
+.login-btn.loading .btn-text {
+  animation: textPulse 1s ease-in-out infinite;
 }
 
-.login-link {
+@keyframes textPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.btn-particles {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 4px;
+}
+
+.btn-particles .particle {
+  width: 6px;
+  height: 6px;
+  background: var(--sci-fi-bg-dark);
+  border-radius: 50%;
+  animation: btnParticle 1s ease-in-out infinite;
+}
+
+.btn-particles .particle:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.btn-particles .particle:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes btnParticle {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.5); opacity: 0.5; }
+}
+
+/* 表单底部 */
+.form-footer {
   text-align: center;
-  margin-top: 20px;
-  animation: fadeIn 1s ease-out 0.5s both;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.footer-text {
+  color: var(--sci-fi-text-muted);
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.sci-fi-link {
+  color: var(--sci-fi-primary);
+  text-decoration: none;
+  font-weight: 500;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.sci-fi-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--sci-fi-primary);
+  transition: width 0.3s ease;
+}
+
+.sci-fi-link:hover {
+  color: var(--sci-fi-success);
+}
+
+.sci-fi-link:hover::after {
+  width: 100%;
+}
+
+/* 数据流装饰 */
+.data-stream {
+  position: absolute;
+  bottom: 16px;
+  right: 20px;
+  display: flex;
+  gap: 4px;
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  color: var(--sci-fi-text-muted);
+  opacity: 0.5;
+}
+
+.data-bit {
+  animation: dataFlicker 2s ease-in-out infinite;
+}
+
+.data-bit:nth-child(2) { animation-delay: 0.2s; }
+.data-bit:nth-child(3) { animation-delay: 0.4s; }
+.data-bit:nth-child(4) { animation-delay: 0.6s; }
+.data-bit:nth-child(5) { animation-delay: 0.8s; }
+.data-bit:nth-child(6) { animation-delay: 1s; }
+.data-bit:nth-child(7) { animation-delay: 1.2s; }
+.data-bit:nth-child(8) { animation-delay: 1.4s; }
+
+@keyframes dataFlicker {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* 底部信息 */
+.footer-info {
+  position: fixed;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  color: var(--sci-fi-text-muted);
+  z-index: 1;
+}
+
+.version {
+  letter-spacing: 2px;
+}
+
+.divider {
+  opacity: 0.3;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--sci-fi-success);
+  border-radius: 50%;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 5px var(--sci-fi-success); }
+  50% { opacity: 0.6; box-shadow: 0 0 10px var(--sci-fi-success); }
+}
+
+/* 消息提示样式 */
+:global(.sci-fi-message) {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  z-index: 9999;
+  transform: translateX(400px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+:global(.sci-fi-message.show) {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+:global(.sci-fi-message.success) {
+  border-color: var(--sci-fi-success);
+  box-shadow: 0 0 20px rgba(0, 245, 212, 0.2);
+}
+
+:global(.sci-fi-message.error) {
+  border-color: var(--sci-fi-danger);
+  box-shadow: 0 0 20px rgba(241, 91, 181, 0.2);
+}
+
+:global(.sci-fi-message .msg-icon) {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+:global(.sci-fi-message.success .msg-icon) {
+  color: var(--sci-fi-success);
+}
+
+:global(.sci-fi-message.error .msg-icon) {
+  color: var(--sci-fi-danger);
+}
+
+:global(.sci-fi-message .msg-text) {
+  color: var(--sci-fi-text-primary);
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+  .login-card {
+    width: 90%;
+    padding: 32px 24px;
+  }
+  
+  .title {
+    font-size: 22px;
+    letter-spacing: 4px;
+  }
+  
+  .logo-text {
+    font-size: 18px;
+  }
 }
 </style>

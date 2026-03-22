@@ -1,862 +1,1302 @@
 <template>
-  <div class="ai-chat-container">
-    <!-- 左侧会话列表 -->
-    <div class="session-list">
-      <div class="session-list-header">
-        <span>会话列表</span>
-        <button class="new-chat-btn" @click="createNewSession">＋ 新聊天</button>
+  <div class="sci-fi-container">
+    <div class="sci-fi-header">
+      <div class="logo">
+        <span class="logo-icon">◈</span>
+        <span class="logo-text">Agent Go</span>
       </div>
-      <ul class="session-list-ul">
-        <li
-          v-for="session in sessions"
-          :key="session.id"
-          :class="['session-item', { active: currentSessionId === session.id }]"
-          @click="switchSession(session.id)"
-        >
-          {{ session.name || `会话 ${session.id}` }}
-        </li>
-      </ul>
-    </div>
-
-    <!-- 右侧聊天区域 -->
-    <div class="chat-section">
-      <div class="top-bar">
-        <button class="back-btn" @click="$router.push('/menu')">← 返回</button>
-        <button class="sync-btn" @click="syncHistory" :disabled="!currentSessionId || tempSession">同步历史数据</button>
-        <label for="modelType">选择模型：</label>
-        <select id="modelType" v-model="selectedModel" class="model-select">
-          <option value="qwen">阿里百炼 (QWEN)</option>
-          <option value="deepseek">深度求索 (DeepSeek)</option>
-        </select>
-        <label for="streamingMode" style="margin-left: 20px;">
-          <input type="checkbox" id="streamingMode" v-model="isStreaming" />
-          流式响应
-        </label>
-      </div>
-
-      <div class="chat-messages" ref="messagesRef">
-        <div
-          v-for="(message, index) in currentMessages"
-          :key="index"
-          :class="['message', message.role === 'user' ? 'user-message' : 'ai-message']"
-        >
-          <div class="message-header">
-            <b>{{ message.role === 'user' ? '你' : 'AI' }}:</b>
-            <button v-if="message.role === 'assistant'" class="tts-btn" @click="playTTS(message.content)">🔊</button>
-            <span v-if="message.meta && message.meta.status === 'streaming'" class="streaming-indicator"> ··</span>
-          </div>
-          <div class="message-content" v-html="renderMarkdown(message.content)"></div>
+      
+      <div class="header-actions">
+        <div class="model-selector">
+          <span class="selector-label">◉ MODEL</span>
+          <select v-model="selectedModel" class="sci-fi-select">
+            <option value="qwen">通义千问 (QWEN)</option>
+            <option value="deepseek">深度求索 (DeepSeek)</option>
+          </select>
+        </div>
+        
+        <div class="stream-toggle">
+          <label class="toggle-label">
+            <input type="checkbox" v-model="isStreaming" class="toggle-input" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">流式响应</span>
+          </label>
         </div>
       </div>
 
-      <div class="chat-input">
-        <textarea
-          v-model="inputMessage"
-          placeholder="请输入你的问题..."
-          @keydown.enter.exact.prevent="sendMessage"
-          :disabled="loading"
-          ref="messageInput"
-          rows="1"
-        ></textarea>
-        <button
-          type="button"
-          :disabled="!inputMessage.trim() || loading"
-          @click="sendMessage"
-          class="send-btn"
+      <div class="bar-right">
+        <button 
+          class="sync-btn" 
+          @click="syncSessions" 
+          :disabled="syncing"
+          :class="{ 'syncing': syncing }"
         >
-          {{ loading ? '发送中...' : '发送' }}
+          <span class="btn-icon">⟳</span>
+          <span v-if="!syncing">同步</span>
+          <span v-else>同步中...</span>
         </button>
+        
+        <button class="logout-btn" @click="logout">
+          <span class="btn-icon">⊟</span>
+          <span>退出</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sci-fi-body">
+      <div class="sci-fi-sidebar">
+        <div class="sidebar-header">
+          <h2 class="sidebar-title">对话</h2>
+          <button class="new-chat-btn" @click="startNewChat">
+            <span class="btn-icon">⊕</span>
+            <span>新对话</span>
+          </button>
+        </div>
+        
+        <div class="sessions-list">
+          <div 
+            v-for="(session, id) in sessions" 
+            :key="id"
+            class="session-item"
+            :class="{ 'active': currentSessionId === id }"
+            @click="switchSession(id)"
+          >
+            <div class="session-title">{{ session.name }}</div>
+            <button 
+              class="delete-btn" 
+              @click.stop="deleteSession(id)"
+              title="删除会话"
+            >
+              <span class="btn-icon">⊗</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sci-fi-main">
+        <div class="messages-container" ref="messagesContainer">
+          <div 
+            v-for="(message, index) in currentMessages" 
+            :key="index"
+            :class="['message-wrapper', message.role === 'user' ? 'user' : 'ai']"
+          >
+            <div class="message-avatar">
+              <span class="avatar-icon">{{ message.role === 'user' ? '◉' : '◈' }}</span>
+            </div>
+            
+            <div class="message-content-wrapper">
+              <div class="message-header">
+                <span class="sender-name">{{ message.role === 'user' ? '用户' : 'AI助手' }}</span>
+                <span v-if="message.meta && message.meta.status === 'streaming'" class="streaming-dot"></span>
+              </div>
+              
+              <div class="message-bubble">
+                <div class="bubble-content" v-html="renderMarkdown(message.content)"></div>
+                <div v-if="message.role === 'assistant'" class="message-actions">
+                  <button class="action-btn tts-btn" @click="playTTS(message.content)" title="语音播放">
+                    <span class="btn-icon">◊</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <div class="input-wrapper">
+            <div class="input-frame">
+              <div class="frame-corner tl"></div>
+              <div class="frame-corner tr"></div>
+              <div class="frame-corner bl"></div>
+              <div class="frame-corner br"></div>
+            </div>
+            
+            <textarea
+              v-model="inputMessage"
+              class="sci-fi-textarea"
+              placeholder="输入您的问题..."
+              @keydown.enter.exact.prevent="sendMessage"
+              :disabled="loading"
+              ref="messageInput"
+              rows="1"
+            ></textarea>
+            
+            <button
+              type="button"
+              class="send-btn"
+              :disabled="!inputMessage.trim() || loading"
+              :class="{ 'loading': loading }"
+              @click="sendMessage"
+            >
+              <span class="btn-icon">⟩</span>
+            </button>
+          </div>
+          
+          <div class="input-footer">
+            <span class="model-badge">{{ selectedModel === 'qwen' ? 'QWEN' : 'DEEPSEEK' }}</span>
+            <div class="input-info">
+              <span v-if="loading" class="loading-text">AI正在思考...</span>
+              <span v-else class="ready-text">就绪</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted, watch, nextTick } from 'vue'
+import api from '../utils/api.js'
+import { marked } from 'marked'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
 
+const inputMessage = ref('')
+const sessions = ref({})
+const currentSessionId = ref('')
+const loading = ref(false)
+const syncing = ref(false)
+const messagesContainer = ref(null)
+const messageInput = ref(null)
+const tempSession = ref(false)
+const isStreaming = ref(true)
+const selectedModel = ref('qwen')
 
-import { ref, nextTick, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import api from '../utils/api'
+const currentMessages = ref([])
 
-export default {
-  name: 'AIChat',
-  setup() {
+const showMessage = (message, type = 'info') => {
+  // 简单的消息提示，实际项目中可使用更完善的组件
+  console.log(`${type}: ${message}`)
+  // 可以在这里集成Element Plus的Message组件
+}
 
-    const sessions = ref({})               
-    const currentSessionId = ref(null)    
-    const tempSession = ref(false)        
-    const currentMessages = ref([])      
-    const inputMessage = ref('')
-    const loading = ref(false)
-    const messagesRef = ref(null)
-    const messageInput = ref(null)
-    const selectedModel = ref('qwen')
-    const isStreaming = ref(false)
+const scrollToBottom = () => {
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+  }
+}
 
-
-    const renderMarkdown = (text) => {
-      if (!text && text !== '') return ''
-      return String(text)
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`(.*?)`/g, '<code>$1</code>')
-        .replace(/\n/g, '<br>')
-    }
-
-    const playTTS = async (text) => {
-      try {
-        const response = await api.post('/chat/tts', { text })
-        if (response.data && response.data.status_code === 1000 && response.data.url) {
-          const audio = new Audio(response.data.url)
-          audio.play()
-        } else {
-          ElMessage.error('无法获取语音')
-        }
-      } catch (error) {
-        console.error('TTS error:', error)
-        ElMessage.error('请求语音接口失败')
+const renderMarkdown = (content) => {
+  if (!content) return ''
+  
+  marked.setOptions({
+    highlight: function(code, lang) {
+      if (lang && hljs.getLanguage(lang)) {
+        return hljs.highlight(code, { language: lang }).value
       }
-    }
+      return hljs.highlightAuto(code).value
+    },
+    breaks: true,
+    gfm: true
+  })
+  
+  return marked(content)
+}
 
-    const loadSessions = async () => {
-      try {
-        const response = await api.get('/AI/chat/sessions')
-        if (response.data && response.data.status_code === 1000 && Array.isArray(response.data.sessions)) {
-          const sessionMap = {}
-          response.data.sessions.forEach(s => {
-            const sid = String(s.sessionId)
-            sessionMap[sid] = {
-              id: sid,
-              name: s.name || `会话 ${sid}`,
-              messages: [] // lazy load
-            }
-          })
-          sessions.value = sessionMap
-        }
-      } catch (error) {
-        console.error('Load sessions error:', error)
-      }
-    }
+const startNewChat = () => {
+  tempSession.value = true
+  currentSessionId.value = ''
+  currentMessages.value = []
+  nextTick(() => {
+    messageInput.value?.focus()
+  })
+}
 
-    const createNewSession = () => {
-      currentSessionId.value = 'temp'
-      tempSession.value = true
-      currentMessages.value = []
-      // focus input
-      nextTick(() => {
-        if (messageInput.value) messageInput.value.focus()
-      })
-    }
+const switchSession = (id) => {
+  currentSessionId.value = id
+  if (sessions.value[id]) {
+    currentMessages.value = sessions.value[id].messages || []
+  }
+  nextTick(() => {
+    scrollToBottom()
+  })
+}
 
-    const switchSession = async (sessionId) => {
-      if (!sessionId) return
-      currentSessionId.value = String(sessionId)
-      tempSession.value = false
-
-      // lazy load history if not present
-      if (!sessions.value[sessionId].messages || sessions.value[sessionId].messages.length === 0) {
-        try {
-          const response = await api.post('/AI/chat/history', { sessionId: currentSessionId.value })
-          if (response.data && response.data.status_code === 1000 && Array.isArray(response.data.history)) {
-            const messages = response.data.history.map(item => ({
-              role: item.is_user ? 'user' : 'assistant',
-              content: item.content
-            }))
-            sessions.value[sessionId].messages = messages
-          }
-        } catch (err) {
-          console.error('Load history error:', err)
-        }
-      }
-
-
-      currentMessages.value = [...(sessions.value[sessionId].messages || [])]
-      await nextTick()
-      scrollToBottom()
-    }
-
-    const syncHistory = async () => {
-      if (!currentSessionId.value || tempSession.value) {
-        ElMessage.warning('请选择已有会话进行同步')
-        return
-      }
-      try {
-        const response = await api.post('/AI/chat/history', { sessionId: currentSessionId.value })
-        if (response.data && response.data.status_code === 1000 && Array.isArray(response.data.history)) {
-          const messages = response.data.history.map(item => ({
-            role: item.is_user ? 'user' : 'assistant',
-            content: item.content
-          }))
-          sessions.value[currentSessionId.value].messages = messages
-          currentMessages.value = [...messages]
-          await nextTick()
-          scrollToBottom()
-        } else {
-          ElMessage.error('无法获取历史数据')
-        }
-      } catch (err) {
-        console.error('Sync history error:', err)
-        ElMessage.error('请求历史数据失败')
-      }
-    }
-
-
-    const sendMessage = async () => {
-      if (!inputMessage.value || !inputMessage.value.trim()) {
-        ElMessage.warning('请输入消息内容')
-        return
-      }
-
-      const userMessage = {
-        role: 'user',
-        content: inputMessage.value
-      }
-      const currentInput = inputMessage.value
-      inputMessage.value = ''
-
-
-      currentMessages.value.push(userMessage)
-      await nextTick()
-      scrollToBottom()
-
-      try {
-        loading.value = true
-        if (isStreaming.value) {
-
-          await handleStreaming(currentInput)
-        } else {
-
-          await handleNormal(currentInput)
-        }
-      } catch (err) {
-        console.error('Send message error:', err)
-        ElMessage.error('发送失败，请重试')
-
-        if (!tempSession.value && currentSessionId.value && sessions.value[currentSessionId.value] && sessions.value[currentSessionId.value].messages) {
-
-          const sessionArr = sessions.value[currentSessionId.value].messages
-          if (sessionArr && sessionArr.length) sessionArr.pop()
-        }
-        currentMessages.value.pop()
-      } finally {
-        if (!isStreaming.value) {
-          loading.value = false
-        }
-        await nextTick()
-        scrollToBottom()
-      }
-    }
-
-
-    async function handleStreaming(question) {
-
-      const aiMessage = {
-        role: 'assistant',
-        content: '',
-        meta: { status: 'streaming' } // mark streaming
-      }
-
-
-      const aiMessageIndex = currentMessages.value.length
-      currentMessages.value.push(aiMessage)
-
-      if (!tempSession.value && currentSessionId.value && sessions.value[currentSessionId.value]) {
-        if (!sessions.value[currentSessionId.value].messages) sessions.value[currentSessionId.value].messages = []
-        sessions.value[currentSessionId.value].messages.push({ role: 'assistant', content: '' })
-      }
-
-
-      const url = tempSession.value
-        ? '/api/AI/chat/send-stream-new-session'  
-        : '/api/AI/chat/send-stream'           
-
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-      }
-
-      const body = tempSession.value
-        ? { question: question, modelType: selectedModel.value }
-        : { question: question, modelType: selectedModel.value, sessionId: currentSessionId.value }
-
-      try {
-        // 创建 fetch 连接读取 SSE 流
-        const response = await fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(body)
-        })
-
-        if (!response.ok) {
-          loading.value = false
-          throw new Error('Network response was not ok')
-        }
-
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ''
-
-        // 读取流数据
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          const chunk = decoder.decode(value, { stream: true })
-          buffer += chunk
-
-          // 按行分割
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || '' // 保留未完成的行
-
-          for (const line of lines) {
-            const trimmedLine = line.trim()
-            if (!trimmedLine) continue
-
-            // 处理 SSE 格式：data: <content>
-            if (trimmedLine.startsWith('data:')) {
-              const data = trimmedLine.slice(5).trim()
-              console.log('[SSE] Received:', data) // 调试日志
-
-              if (data === '[DONE]') {
-                // 流结束
-                console.log('[SSE] Stream done')
-                loading.value = false
-                currentMessages.value[aiMessageIndex].meta = { status: 'done' }
-                currentMessages.value = [...currentMessages.value]
-              } else if (data.startsWith('{')) {
-                // 尝试解析 JSON（如 sessionId）
-                try {
-                  const parsed = JSON.parse(data)
-                  if (parsed.sessionId) {
-                    const newSid = String(parsed.sessionId)
-                    console.log('[SSE] Session ID:', newSid)
-                    if (tempSession.value) {
-                      sessions.value[newSid] = {
-                        id: newSid,
-                        name: '新会话',
-                        messages: [...currentMessages.value]
-                      }
-                      currentSessionId.value = newSid
-                      tempSession.value = false
-                    }
-                  }
-                } catch (e) {
-                  // 不是 JSON，当作普通文本处理
-                  currentMessages.value[aiMessageIndex].content += data
-                  console.log('[SSE] Content updated:', currentMessages.value[aiMessageIndex].content.length)
-                }
-              } else {
-                // 普通文本数据，直接追加
-                // 使用数组索引直接更新，强制 Vue 响应式系统检测变化
-                currentMessages.value[aiMessageIndex].content += data
-                console.log('[SSE] Content updated:', currentMessages.value[aiMessageIndex].content.length)
-              }
-
-              // 每收到一条数据就立即更新 DOM
-              // 强制更新整个数组以触发响应式
-              currentMessages.value = [...currentMessages.value]
-              
-              // 使用 requestAnimationFrame 强制浏览器重排
-              await new Promise(resolve => {
-                requestAnimationFrame(() => {
-                  scrollToBottom()
-                  resolve()
-                })
-              })
-            }
-          }
-        }
-
-        // 流读取完成后的处理
-        loading.value = false
-        currentMessages.value[aiMessageIndex].meta = { status: 'done' }
-        currentMessages.value = [...currentMessages.value]
-
-        // 同步到 sessions 存储
-        if (!tempSession.value && currentSessionId.value && sessions.value[currentSessionId.value]) {
-          const sessMsgs = sessions.value[currentSessionId.value].messages
-          if (Array.isArray(sessMsgs) && sessMsgs.length) {
-            const lastIndex = sessMsgs.length - 1
-            if (sessMsgs[lastIndex] && sessMsgs[lastIndex].role === 'assistant') {
-              sessMsgs[lastIndex].content = currentMessages.value[aiMessageIndex].content
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Stream error:', err)
-        loading.value = false
-        currentMessages.value[aiMessageIndex].meta = { status: 'error' }
-        currentMessages.value = [...currentMessages.value]
-        ElMessage.error('流式传输出错')
-      }
-    }
-
-
-    async function handleNormal(question) {
-      if (tempSession.value) {
-
-        const response = await api.post('/AI/chat/send-new-session', {
-          question: question,
-          modelType: selectedModel.value
-        })
-        if (response.data && response.data.status_code === 1000) {
-          const sessionId = String(response.data.sessionId)
-          const aiMessage = {
-            role: 'assistant',
-            content: response.data.Information || ''
-          }
-
-          sessions.value[sessionId] = {
-            id: sessionId,
-            name: '新会话',
-            messages: [ { role: 'user', content: question }, aiMessage ]
-          }
-          currentSessionId.value = sessionId
-          tempSession.value = false
-          currentMessages.value = [...sessions.value[sessionId].messages]
-        } else {
-          ElMessage.error(response.data?.status_msg || '发送失败')
-
-          currentMessages.value.pop()
-        }
-      } else {
-
-        const sessionMsgs = sessions.value[currentSessionId.value].messages
-
-        sessionMsgs.push({ role: 'user', content: question })
-
-        const response = await api.post('/AI/chat/send', {
-          question: question,
-          modelType: selectedModel.value,
-          sessionId: currentSessionId.value
-        })
-        if (response.data && response.data.status_code === 1000) {
-          const aiMessage = { role: 'assistant', content: response.data.Information || '' }
-          sessionMsgs.push(aiMessage)
-          currentMessages.value = [...sessionMsgs]
-        } else {
-          ElMessage.error(response.data?.status_msg || '发送失败')
-          sessionMsgs.pop() // rollback
-          currentMessages.value.pop()
-        }
-      }
-    }
-
-
-    const scrollToBottom = () => {
-      if (messagesRef.value) {
-        try {
-          messagesRef.value.scrollTop = messagesRef.value.scrollHeight
-        } catch (e) {
-          // ignore
-        }
-      }
-    }
-
-    onMounted(() => {
-      loadSessions()
-    })
-
-    // expose to template
-    return {
-      sessions: computed(() => Object.values(sessions.value)),
-      currentSessionId,
-      tempSession,
-      currentMessages,
-      inputMessage,
-      loading,
-      messagesRef,
-      messageInput,
-      selectedModel,
-      isStreaming,
-      renderMarkdown,
-      playTTS,
-      createNewSession,
-      switchSession,
-      syncHistory,
-      sendMessage
+const deleteSession = (id) => {
+  if (confirm('确定要删除这个会话吗？')) {
+    delete sessions.value[id]
+    if (currentSessionId.value === id) {
+      startNewChat()
     }
   }
 }
+
+const syncSessions = async () => {
+  syncing.value = true
+  try {
+    const response = await api.get('/AI/chat/sessions')
+    if (response.data && response.data.status_code === 1000) {
+      const sessionList = response.data.sessions || []
+      const newSessions = {}
+      
+      sessionList.forEach(session => {
+        newSessions[session.SessionID] = {
+          id: session.SessionID,
+          name: session.Title || '未命名会话',
+          messages: []
+        }
+      })
+      
+      sessions.value = newSessions
+      
+      if (Object.keys(newSessions).length > 0 && !currentSessionId.value) {
+        const firstSessionId = Object.keys(newSessions)[0]
+        switchSession(firstSessionId)
+      }
+      
+      showMessage('会话同步成功')
+    }
+  } catch (error) {
+    console.error('同步会话失败:', error)
+    showMessage('同步会话失败', 'error')
+  } finally {
+    syncing.value = false
+  }
+}
+
+const sendMessage = async () => {
+  const question = inputMessage.value.trim()
+  if (!question) return
+  
+  inputMessage.value = ''
+  loading.value = true
+  
+  // 添加用户消息到当前会话
+  currentMessages.value.push({ role: 'user', content: question })
+  
+  if (!tempSession.value && currentSessionId.value && sessions.value[currentSessionId.value]) {
+    if (!sessions.value[currentSessionId.value].messages) sessions.value[currentSessionId.value].messages = []
+    sessions.value[currentSessionId.value].messages.push({ role: 'user', content: question })
+  }
+  
+  scrollToBottom()
+  
+  // 添加AI消息占位符
+  const aiMessage = {
+    role: 'assistant',
+    content: '',
+    meta: { status: 'streaming' }
+  }
+  
+  currentMessages.value.push(aiMessage)
+  const aiMessageIndex = currentMessages.value.length - 1
+
+  if (!tempSession.value && currentSessionId.value && sessions.value[currentSessionId.value]) {
+    if (!sessions.value[currentSessionId.value].messages) sessions.value[currentSessionId.value].messages = []
+    sessions.value[currentSessionId.value].messages.push({ role: 'assistant', content: '' })
+  }
+
+  if (isStreaming.value) {
+    await handleStreaming(question, aiMessageIndex)
+  } else {
+    await handleNormal(question, aiMessageIndex)
+  }
+}
+
+const handleStreaming = async (question, aiMessageIndex) => {
+  const url = tempSession.value
+    ? '/api/AI/chat/send-stream-new-session'
+    : '/api/AI/chat/send-stream'
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+  }
+
+  const body = tempSession.value
+    ? { question: question, modelType: selectedModel.value }
+    : { question: question, modelType: selectedModel.value, sessionId: currentSessionId.value }
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
+    })
+
+    if (!response.ok) {
+      loading.value = false
+      throw new Error('Network response was not ok')
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const chunk = decoder.decode(value, { stream: true })
+      buffer += chunk
+
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        const trimmedLine = line.trim()
+        if (!trimmedLine) continue
+
+        if (trimmedLine.startsWith('data:')) {
+          const data = trimmedLine.slice(5).trim()
+
+          if (data === '[DONE]') {
+            loading.value = false
+            currentMessages.value[aiMessageIndex].meta = { status: 'done' }
+            currentMessages.value = [...currentMessages.value]
+          } else if (data.startsWith('{')) {
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.sessionId) {
+                const newSid = String(parsed.sessionId)
+                if (tempSession.value) {
+                  sessions.value[newSid] = {
+                    id: newSid,
+                    name: '新会话',
+                    messages: [...currentMessages.value]
+                  }
+                  currentSessionId.value = newSid
+                  tempSession.value = false
+                }
+              }
+            } catch (e) {
+              currentMessages.value[aiMessageIndex].content += data
+            }
+          } else {
+            currentMessages.value[aiMessageIndex].content += data
+          }
+
+          currentMessages.value = [...currentMessages.value]
+          
+          await new Promise(resolve => {
+            requestAnimationFrame(() => {
+              scrollToBottom()
+              resolve()
+            })
+          })
+        }
+      }
+    }
+
+    loading.value = false
+    currentMessages.value[aiMessageIndex].meta = { status: 'done' }
+    currentMessages.value = [...currentMessages.value]
+
+    if (!tempSession.value && currentSessionId.value && sessions.value[currentSessionId.value]) {
+      const sessMsgs = sessions.value[currentSessionId.value].messages
+      if (Array.isArray(sessMsgs) && sessMsgs.length) {
+        const lastIndex = sessMsgs.length - 1
+        if (sessMsgs[lastIndex] && sessMsgs[lastIndex].role === 'assistant') {
+          sessMsgs[lastIndex].content = currentMessages.value[aiMessageIndex].content
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Stream error:', err)
+    loading.value = false
+    currentMessages.value[aiMessageIndex].meta = { status: 'error' }
+    currentMessages.value = [...currentMessages.value]
+    showMessage('流式传输出错', 'error')
+  }
+}
+
+const handleNormal = async (question, aiMessageIndex) => {
+  if (tempSession.value) {
+    const response = await api.post('/api/AI/chat/send-new-session', {
+      question: question,
+      modelType: selectedModel.value
+    })
+    if (response.data && response.data.status_code === 1000) {
+      const sessionId = String(response.data.sessionId)
+      const aiMessage = {
+        role: 'assistant',
+        content: response.data.Information || ''
+      }
+
+      sessions.value[sessionId] = {
+        id: sessionId,
+        name: '新会话',
+        messages: [ { role: 'user', content: question }, aiMessage ]
+      }
+      currentSessionId.value = sessionId
+      tempSession.value = false
+      currentMessages.value = [...sessions.value[sessionId].messages]
+    } else {
+      showMessage(response.data?.status_msg || '发送失败', 'error')
+      // 使用 aiMessageIndex 删除占位符消息
+      if (aiMessageIndex >= 0 && aiMessageIndex < currentMessages.value.length) {
+        currentMessages.value.splice(aiMessageIndex, 1)
+      }
+    }
+  } else {
+    const sessionMsgs = sessions.value[currentSessionId.value].messages
+    sessionMsgs.push({ role: 'user', content: question })
+
+    const response = await api.post('/api/AI/chat/send', {
+      question: question,
+      modelType: selectedModel.value,
+      sessionId: currentSessionId.value
+    })
+    if (response.data && response.data.status_code === 1000) {
+      const aiMessage = {
+        role: 'assistant',
+        content: response.data.Information || ''
+      }
+      sessionMsgs.push(aiMessage)
+      // 使用 aiMessageIndex 更新占位符消息
+      if (aiMessageIndex >= 0 && aiMessageIndex < currentMessages.value.length) {
+        currentMessages.value[aiMessageIndex].content = aiMessage.content
+        currentMessages.value[aiMessageIndex].meta = { status: 'done' }
+      } else {
+        currentMessages.value.push(aiMessage)
+      }
+    } else {
+      showMessage(response.data?.status_msg || '发送失败', 'error')
+      // 使用 aiMessageIndex 删除占位符消息
+      if (aiMessageIndex >= 0 && aiMessageIndex < currentMessages.value.length) {
+        currentMessages.value.splice(aiMessageIndex, 1)
+      }
+      sessionMsgs.pop()
+    }
+  }
+  loading.value = false
+  scrollToBottom()
+}
+
+const logout = () => {
+  localStorage.removeItem('token')
+  window.location.href = '/login'
+}
+
+const playTTS = (text) => {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'zh-CN'
+    speechSynthesis.speak(utterance)
+  } else {
+    showMessage('浏览器不支持语音播放', 'warning')
+  }
+}
+
+onMounted(() => {
+  syncSessions()
+  nextTick(() => {
+    messageInput.value?.focus()
+  })
+})
+
+watch(currentMessages, () => {
+  nextTick(() => {
+    scrollToBottom()
+  })
+}, { deep: true })
 </script>
 
 <style scoped>
-.ai-chat-container {
+.sci-fi-container {
+  width: 100vw;
   height: 100vh;
   display: flex;
-  background: #ffffff;
-  position: relative;
+  flex-direction: column;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e9ecef 100%);
+  font-family: 'Rajdhani', sans-serif;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color: #222;
+  position: relative;
 }
 
-.ai-chat-container::before {
+.sci-fi-container::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.08)"/><circle cx="80" cy="80" r="2" fill="rgba(255,255,255,0.08)"/><circle cx="40" cy="60" r="1" fill="rgba(255,255,255,0.06)"/><circle cx="60" cy="30" r="1.5" fill="rgba(255,255,255,0.06)"/></svg>');
-  animation: float 20s ease-in-out infinite;
-  opacity: 0.25;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(180deg); }
-}
-
-.session-list {
-  width: 280px;
-  height: 100vh;
-  overflow: hidden;
+.sci-fi-header {
   display: flex;
-  flex-direction: column;
-  background: #ffffff;
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.08);
-  position: relative;
-  z-index: 2;
-}
-
-.session-list-header {
-  padding: 20px;
-  text-align: center;
-  font-weight: 600;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.06) 0%, rgba(103, 194, 58, 0.06) 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  justify-content: space-between;
   align-items: center;
-}
-
-.new-chat-btn {
-  width: 100%;
-  padding: 12px 0;
-  cursor: pointer;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.28);
-  transition: all 0.25s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.new-chat-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
-  transition: left 0.5s;
-}
-
-.new-chat-btn:hover::before {
-  left: 100%;
-}
-
-.new-chat-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.36);
-}
-
-.session-list-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.session-item {
-  padding: 15px 20px;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
-  transition: all 0.2s ease;
-  position: relative;
-  color: #2c3e50;
-  background: #f9fafb; /* 浅灰色背景 */
-  border-left: 4px solid rgba(0, 0, 0, 0.06); /* 浅灰色左侧边框 */
-}
-
-.session-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #818cf8 100%);
-  color: white;
-  font-weight: 600;
-  box-shadow: inset 0 0 20px rgba(102, 126, 234, 0.2);
-}
-
-.session-item:hover {
-  background: #e6f7ff; /* 浅蓝色背景 */
-  color: #1a1a1a; /* 深色文字 */
-  transform: translateX(4px);
-}
-
-/* chat section */
-.chat-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.top-bar {
+  padding: 16px 24px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  color: #2c3e50;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.1);
+  z-index: 100;
+  position: relative;
+}
+
+.logo {
   display: flex;
   align-items: center;
-  padding: 12px 24px;
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  gap: 12px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.logo-icon {
+  font-size: 24px;
+  color: #10B981;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #10B981;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.model-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selector-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #10B981;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.sci-fi-select {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  color: #10B981;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+}
+
+.sci-fi-select:hover {
+  border-color: #10B981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.stream-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-slider {
+  width: 44px;
+  height: 24px;
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-input:checked + .toggle-slider {
+  background: #10B981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.toggle-input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-text {
+  font-size: 14px;
+  color: #10B981;
+  font-weight: 500;
+}
+
+.bar-right {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
-.back-btn {
-  background: rgba(255, 255, 255, 0.22);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  color: #2c3e50;
-  padding: 8px 14px;
-  border-radius: 10px;
+.sync-btn, .logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  color: #10B981;
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
 }
 
-.back-btn:hover {
-  background: rgba(255, 255, 255, 0.32);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-}
-
-.sync-btn {
-  background: linear-gradient(135deg, #67c23a 0%, #409eff 100%);
-  color: white;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.2);
-  transition: all 0.2s ease;
+.sync-btn:hover, .logout-btn:hover {
+  border-color: #10B981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.05);
 }
 
 .sync-btn:disabled {
-  background: #ccc;
-  box-shadow: none;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-.model-select {
-  margin-left: 6px;
-  padding: 6px 10px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 8px;
-  background: white;
-  color: #2c3e50;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.sync-btn.syncing {
+  animation: pulse 1.5s infinite;
 }
 
-.chat-messages {
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.btn-icon {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.sci-fi-body {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 30px;
   display: flex;
-  flex-direction: column;
-  gap: 18px;
+  overflow: hidden;
   position: relative;
   z-index: 1;
 }
 
-/* scrollbar */
-.chat-messages::-webkit-scrollbar {
+.sci-fi-sidebar {
+  width: 280px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(16, 185, 129, 0.2);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 12px rgba(16, 185, 129, 0.1);
+  z-index: 10;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #10B981;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.new-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #10B981;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.new-chat-btn:hover {
+  background: #059669;
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.sessions-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.05);
+}
+
+.session-item:hover {
+  border-color: #10B981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.02);
+}
+
+.session-item.active {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10B981;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+}
+
+.session-title {
+  flex: 1;
+  font-size: 14px;
+  color: #10B981;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.session-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  background: #ef4444;
+  color: white;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+}
+
+.sci-fi-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
+}
+
+.messages-container::-webkit-scrollbar {
   width: 8px;
 }
-.chat-messages::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.12);
-  border-radius: 8px;
-}
-.chat-messages::-webkit-scrollbar-track {
-  background: transparent;
+
+.messages-container::-webkit-scrollbar-track {
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 4px;
 }
 
-.message {
-  max-width: 70%;
-  padding: 14px 18px;
-  border-radius: 18px;
-  line-height: 1.6;
-  word-wrap: break-word;
-  position: relative;
-  animation: messageSlideIn 0.28s ease-out;
-  font-size: 15px;
-  box-sizing: border-box;
+.messages-container::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
+  transition: all 0.3s ease;
 }
 
-@keyframes messageSlideIn {
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.5);
+}
+
+.message-wrapper {
+  display: flex;
+  gap: 12px;
+  max-width: 80%;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.98);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-.user-message {
+.message-wrapper.user {
   align-self: flex-end;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.16);
+  flex-direction: row-reverse;
 }
 
-.user-message::after {
-  content: '';
-  position: absolute;
-  bottom: -6px;
-  right: 18px;
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid #764ba2;
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
 }
 
-.ai-message {
-  align-self: flex-start;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(4px);
-  color: #000000;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+.message-wrapper.user .message-avatar {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10B981;
 }
 
-.ai-message::after {
-  content: '';
-  position: absolute;
-  bottom: -6px;
-  left: 18px;
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid rgba(255, 255, 255, 0.95);
+.avatar-icon {
+  font-size: 16px;
+  font-weight: bold;
+  color: #10B981;
+  text-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
+}
+
+.message-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .message-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
-.message-header b {
-  font-weight: 600;
-}
-
-.tts-btn {
-  padding: 6px 10px;
-  border-radius: 8px;
+.sender-name {
   font-size: 12px;
-  cursor: pointer;
-  background: linear-gradient(135deg, #67c23a 0%, #409eff 100%);
-  color: white;
-  border: none;
-  transition: all 0.18s ease;
-  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.18);
-}
-
-.tts-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.25);
-}
-
-.streaming-indicator {
-  color: #999;
   font-weight: 600;
-  margin-left: 6px;
+  color: #10B981;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
-/* message content */
-.message-content {
-  white-space: pre-wrap;
-  word-break: break-word;
+.streaming-dot {
+  width: 8px;
+  height: 8px;
+  background: #10B981;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
-/* input area */
-.chat-input {
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+.message-bubble {
+  padding: 16px 20px;
+  border-radius: 16px;
   position: relative;
-  z-index: 1;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.chat-input textarea {
-  width: 100%;
-  resize: none;
-  border: 2px solid rgba(0, 0, 0, 0.06);
+.message-wrapper.user .message-bubble {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  border-bottom-right-radius: 4px;
+}
+
+.message-wrapper.ai .message-bubble {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(16, 185, 129, 0.4);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 12px rgba(16, 185, 129, 0.15);
+}
+
+.bubble-content {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1f2937;
+  word-wrap: break-word;
+}
+
+.bubble-content p {
+  margin: 0 0 8px 0;
+}
+
+.bubble-content p:last-child {
+  margin-bottom: 0;
+}
+
+.bubble-content code {
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #10B981;
+}
+
+.bubble-content pre {
+  background: rgba(16, 185, 129, 0.05);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  margin: 8px 0;
+}
+
+.bubble-content pre code {
+  background: transparent;
+  padding: 0;
+  color: #1f2937;
+}
+
+.bubble-content blockquote {
+  border-left: 4px solid #10B981;
+  padding-left: 12px;
+  margin: 8px 0;
+  color: #4b5563;
+  font-style: italic;
+}
+
+.message-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(16, 185, 129, 0.1);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 6px;
+  color: #10B981;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  background: #10B981;
+  color: white;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+
+.input-area {
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(16, 185, 129, 0.2);
+  box-shadow: 0 -2px 12px rgba(16, 185, 129, 0.1);
+  position: relative;
+  z-index: 10;
+}
+
+.input-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.input-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 12px;
-  padding: 14px 16px;
-  font-size: 15px;
-  outline: none;
-  background: rgba(255,255,255,0.96);
-  color: #2c3e50;
-  transition: all 0.18s ease;
-  min-height: 20px;
-  max-height: 160px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.1);
 }
 
-.chat-input textarea:focus {
-  border-color: #409eff;
-  box-shadow: 0 8px 30px rgba(64,158,255,0.06);
-  transform: translateY(-1px);
+.frame-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #10B981;
+  border-radius: 4px;
+}
+
+.frame-corner.tl {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.frame-corner.tr {
+  top: -2px;
+  right: -2px;
+  border-left: none;
+  border-bottom: none;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.frame-corner.bl {
+  bottom: -2px;
+  left: -2px;
+  border-right: none;
+  border-top: none;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.frame-corner.br {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.sci-fi-textarea {
+  width: 100%;
+  min-height: 80px;
+  max-height: 200px;
+  padding: 16px 60px 16px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #1f2937;
+  resize: none;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(16, 185, 129, 0.05);
+}
+
+.sci-fi-textarea:focus {
+  outline: none;
+  border-color: #10B981;
+  box-shadow: inset 0 2px 4px rgba(16, 185, 129, 0.1), 0 0 12px rgba(16, 185, 129, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.sci-fi-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .send-btn {
   position: absolute;
-  right: 36px;
-  bottom: 30px;
-  padding: 12px 22px;
+  bottom: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  background: #10B981;
   border: none;
-  border-radius: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
   color: white;
-  font-size: 15px;
-  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(102,126,234,0.18);
-  transition: all 0.18s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .send-btn:hover:not(:disabled) {
-  transform: translateY(-3px) scale(1.02);
+  background: #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
 }
 
 .send-btn:disabled {
-  background: #ccc;
-  box-shadow: none;
+  opacity: 0.6;
   cursor: not-allowed;
+}
+
+.send-btn.loading {
+  animation: pulse 1.5s infinite;
+}
+
+.btn-icon {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.model-badge {
+  padding: 4px 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #10B981;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.input-info {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.loading-text {
+  color: #10B981;
+  font-weight: 500;
+  animation: pulse 1.5s infinite;
+}
+
+.ready-text {
+  color: #10B981;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .sci-fi-sidebar {
+    width: 240px;
+  }
+  
+  .message-wrapper {
+    max-width: 90%;
+  }
+  
+  .sci-fi-header {
+    padding: 12px 16px;
+  }
+  
+  .logo-text {
+    font-size: 18px;
+  }
+  
+  .header-actions {
+    gap: 16px;
+  }
+  
+  .model-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .sci-fi-select {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  
+  .input-area {
+    padding: 16px;
+  }
+  
+  .messages-container {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sci-fi-sidebar {
+    width: 100%;
+    position: absolute;
+    left: -100%;
+    transition: left 0.3s ease;
+    z-index: 100;
+  }
+  
+  .sci-fi-sidebar.active {
+    left: 0;
+  }
+  
+  .message-wrapper {
+    max-width: 95%;
+  }
+  
+  .sci-fi-header {
+    padding: 10px 12px;
+  }
+  
+  .logo-text {
+    font-size: 16px;
+  }
+  
+  .header-actions {
+    gap: 12px;
+  }
+  
+  .sync-btn, .logout-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+  
+  .input-area {
+    padding: 12px;
+  }
+  
+  .sci-fi-textarea {
+    min-height: 60px;
+    padding: 12px 50px 12px 12px;
+  }
+  
+  .send-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .btn-icon {
+    font-size: 16px;
+  }
 }
 </style>

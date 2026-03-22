@@ -48,13 +48,27 @@ type Rabbitmq struct {
 	RabbitmqVhost    string `toml:"vhost"`
 }
 
+type QwenConfig struct {
+	APIKey    string `toml:"apiKey"`
+	BaseURL   string `toml:"baseURL"`
+	ModelName string `toml:"modelName"`
+}
+
+type DeepSeekConfig struct {
+	APIKey    string `toml:"apiKey"`
+	BaseURL   string `toml:"baseURL"`
+	ModelName string `toml:"modelName"`
+}
+
 type Config struct {
-	EmailConfig `toml:"emailConfig"`
-	RedisConfig `toml:"redisConfig"`
-	MysqlConfig `toml:"mysqlConfig"`
-	JwtConfig   `toml:"jwtConfig"`
-	MainConfig  `toml:"mainConfig"`
-	Rabbitmq    `toml:"rabbitmqConfig"`
+	EmailConfig    `toml:"emailConfig"`
+	RedisConfig    `toml:"redisConfig"`
+	MysqlConfig    `toml:"mysqlConfig"`
+	JwtConfig      `toml:"jwtConfig"`
+	MainConfig     `toml:"mainConfig"`
+	Rabbitmq       `toml:"rabbitmqConfig"`
+	QwenConfig     `toml:"qwenConfig"`
+	DeepSeekConfig `toml:"deepseekConfig"`
 }
 
 type RedisKeyConfig struct {
@@ -69,6 +83,10 @@ var config *Config
 
 // InitConfig 初始化项目配置
 func InitConfig() error {
+	// 确保config不为nil
+	if config == nil {
+		config = new(Config)
+	}
 	// 设置配置文件路径（相对于 main.go 所在的目录）
 	if _, err := toml.DecodeFile("config/config.toml", config); err != nil {
 		log.Fatal(err.Error())
