@@ -1,27 +1,20 @@
 package user
 
 import (
-	"context"
-
 	"server/common/mysql"
 	"server/model"
-	"server/utils"
 
 	"gorm.io/gorm"
 )
 
 const (
-	CodeMsg     = "GopherAI验证码如下(验证码仅限于2分钟有效): "
-	UserNameMsg = "GopherAI的账号如下，请保留好，后续可以用账号进行登录 "
+	CodeMsg     = "GopherAI楠岃瘉鐮佸涓?楠岃瘉鐮佷粎闄愪簬2鍒嗛挓鏈夋晥): "
+	UserNameMsg = "GopherAI鐨勮处鍙峰涓嬶紝璇蜂繚鐣欏ソ锛屽悗缁彲浠ョ敤璐﹀彿杩涜鐧诲綍 "
 )
 
-var ctx = context.Background()
-
-// 这边只能通过账号进行登录
+// 杩欒竟鍙兘閫氳繃璐﹀彿杩涜鐧诲綍
 func IsExistUser(username string) (bool, *model.User) {
-
 	user, err := mysql.GetUserByUsername(username)
-
 	if err == gorm.ErrRecordNotFound || user == nil {
 		return false, nil
 	}
@@ -29,11 +22,9 @@ func IsExistUser(username string) (bool, *model.User) {
 	return true, user
 }
 
-// 检查邮箱是否已存在
+// 妫€鏌ラ偖绠辨槸鍚﹀凡瀛樺湪
 func IsExistEmail(email string) (bool, *model.User) {
-
 	user, err := mysql.GetUserByEmail(email)
-
 	if err == gorm.ErrRecordNotFound || user == nil {
 		return false, nil
 	}
@@ -41,15 +32,34 @@ func IsExistEmail(email string) (bool, *model.User) {
 	return true, user
 }
 
-func Register(username, email, password string) (*model.User, bool) {
+func Register(username, email, passwordHash string, isAdmin bool) (*model.User, bool) {
 	if user, err := mysql.InsertUser(&model.User{
 		Email:    email,
 		Name:     username,
 		Username: username,
-		Password: utils.MD5(password),
+		Password: passwordHash,
+		IsAdmin:  isAdmin,
 	}); err != nil {
 		return nil, false
 	} else {
 		return user, true
 	}
+}
+
+func HasAdminUsers() (bool, error) {
+	var count int64
+	if err := mysql.DB.Model(&model.User{}).
+		Where("is_admin = ?", true).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func UpdatePassword(userID int64, passwordHash string) error {
+	return mysql.DB.Model(&model.User{}).
+		Where("id = ?", userID).
+		Update("password", passwordHash).
+		Error
 }

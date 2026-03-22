@@ -58,14 +58,31 @@
           </button>
         </div>
 
+        <div class="session-toolbar">
+          <label class="session-search-shell">
+            <span class="session-search-label">搜索</span>
+            <input
+              v-model="sessionKeyword"
+              class="session-search-input"
+              type="search"
+              placeholder="按标题筛选会话"
+            />
+          </label>
+
+          <label class="session-archive-toggle">
+            <input v-model="includeArchived" type="checkbox" />
+            <span>显示归档</span>
+          </label>
+        </div>
+
         <div class="sidebar-summary">
-          <span>共 {{ sessionCount }} 个会话</span>
-          <span>{{ tempSession ? '当前为草稿模式' : '当前会话已连接' }}</span>
+          <span>显示 {{ sessionCount }} / {{ totalSessionCount }} 个会话</span>
+          <span>{{ includeArchived ? '包含归档会话' : '仅显示活跃会话' }}</span>
         </div>
 
         <div class="sessions-list">
           <div v-if="!orderedSessions.length" class="sessions-empty">
-            暂无历史会话，发送第一条消息后会自动创建。
+            {{ sessionKeyword ? '没有匹配当前关键词的会话。' : '暂无历史会话，发送第一条消息后会自动创建。' }}
           </div>
 
           <div
@@ -75,12 +92,41 @@
             :class="{ active: currentSessionId === session.id }"
           >
             <button class="session-select" type="button" @click="switchSession(session.id)">
-              <span class="session-name">{{ session.name }}</span>
+              <div class="session-heading">
+                <span class="session-name">{{ session.name }}</span>
+                <div class="session-badges">
+                  <span v-if="session.pinned" class="session-badge pin">置顶</span>
+                  <span v-if="session.archived" class="session-badge archive">归档</span>
+                </div>
+              </div>
               <span class="session-meta">{{ sessionMetaText(session) }}</span>
             </button>
-            <button class="delete-btn" type="button" @click.stop="deleteSession(session.id)">
-              移除
-            </button>
+            <div class="session-actions">
+              <button
+                class="session-action-btn"
+                type="button"
+                :disabled="isSessionBusy(session.id)"
+                @click.stop="renameSession(session)"
+              >
+                改名
+              </button>
+              <button
+                class="session-action-btn"
+                type="button"
+                :disabled="isSessionBusy(session.id)"
+                @click.stop="toggleSessionPin(session)"
+              >
+                {{ session.pinned ? '取消置顶' : '置顶' }}
+              </button>
+              <button
+                class="session-action-btn danger"
+                type="button"
+                :disabled="isSessionBusy(session.id)"
+                @click.stop="toggleSessionArchive(session)"
+              >
+                {{ session.archived ? '恢复' : '归档' }}
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -136,10 +182,14 @@
 
                 <div class="message-bubble" :class="bubbleClass(message)">
                   <div
-                    v-if="message.content"
+                    v-if="message.content && shouldRenderMarkdown(message)"
                     class="bubble-content"
-                    v-html="renderMarkdown(message.content)"
+                    v-html="message.renderedContent"
                   ></div>
+                  <div
+                    v-else-if="message.content"
+                    class="bubble-content stream-plain"
+                  >{{ message.content }}</div>
                   <div v-else class="stream-placeholder">
                     <span class="placeholder-dot"></span>
                     <span class="placeholder-dot"></span>
@@ -267,18 +317,56 @@ const sidebarOpen = ref(false)
 const inputFocused = ref(false)
 const isStreaming = ref(true)
 const selectedModel = ref('qwen')
+const sessionKeyword = ref('')
+const includeArchived = ref(false)
 const tempSession = ref(false)
 const messageInput = ref(null)
 const messagesContainer = ref(null)
 const viewportWidth = ref(typeof window === 'undefined' ? 1280 : window.innerWidth)
+const sessionActionTarget = ref('')
+const sessionActionType = ref('')
 
 let messageSeed = 0
 
+const normalizeSessionTimestamp = (value, fallback = Date.now()) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (!value) {
+    return fallback
+  }
+
+  const parsed = new Date(value).getTime()
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const matchesSessionKeyword = (session, keyword = sessionKeyword.value) => {
+  const normalizedKeyword = (keyword || '').trim().toLowerCase()
+  if (!normalizedKeyword) {
+    return true
+  }
+
+  return (session.name || '').toLowerCase().includes(normalizedKeyword)
+}
+
+const sortSessionList = (sessionList = []) => {
+  return [...sessionList].sort((left, right) => {
+    if (left.pinned !== right.pinned) {
+      return left.pinned ? -1 : 1
+    }
+    return (right.updatedAt || 0) - (left.updatedAt || 0)
+  })
+}
+
+const getVisibleSessionsFromMap = (sessionMap = sessions.value) => {
+  return sortSessionList(Object.values(sessionMap).filter((session) => matchesSessionKeyword(session)))
+}
+
 const isMobile = computed(() => viewportWidth.value <= 768)
-const sessionCount = computed(() => Object.keys(sessions.value).length)
-const orderedSessions = computed(() => {
-  return Object.values(sessions.value).sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0))
-})
+const totalSessionCount = computed(() => Object.keys(sessions.value).length)
+const orderedSessions = computed(() => getVisibleSessionsFromMap())
+const sessionCount = computed(() => orderedSessions.value.length)
 const activeSession = computed(() => sessions.value[currentSessionId.value] || null)
 const currentSessionLabel = computed(() => {
   if (tempSession.value) {
@@ -288,24 +376,56 @@ const currentSessionLabel = computed(() => {
 })
 const selectedModelLabel = computed(() => (selectedModel.value === 'deepseek' ? 'DEEPSEEK' : 'QWEN'))
 
-const createMessage = (role, content = '', meta = {}) => ({
-  id: `msg-${Date.now()}-${++messageSeed}`,
-  role,
-  content,
-  meta: Object.keys(meta).length ? { ...meta } : undefined
-})
+let scrollAnimationFrame = 0
 
-const cloneMessages = (messages = []) => messages.map((message) => ({
-  ...message,
-  meta: message.meta ? { ...message.meta } : undefined
-}))
+const renderMessageMarkdown = (content) => marked.parse(content || '')
+
+const syncMessageRenderState = (message) => {
+  if (!message || message.role !== 'assistant') {
+    return
+  }
+
+  if (!hasMessageContent(message.content) || message.meta?.status === 'streaming') {
+    message.renderedContent = ''
+    return
+  }
+
+  message.renderedContent = renderMessageMarkdown(message.content)
+}
+
+const createMessage = (role, content = '', meta = {}) => {
+  const message = {
+    id: `msg-${Date.now()}-${++messageSeed}`,
+    role,
+    content,
+    renderedContent: '',
+    meta: Object.keys(meta).length ? { ...meta } : undefined
+  }
+
+  syncMessageRenderState(message)
+  return message
+}
+
+const cloneMessages = (messages = []) => messages.map((message) => {
+  const cloned = {
+    ...message,
+    renderedContent: typeof message.renderedContent === 'string' ? message.renderedContent : '',
+    meta: message.meta ? { ...message.meta } : undefined
+  }
+
+  if (!cloned.renderedContent) {
+    syncMessageRenderState(cloned)
+  }
+
+  return cloned
+})
 
 const normalizeSessionName = (name, fallback = '未命名会话') => {
   const normalized = (name || '').trim()
   if (!normalized) {
     return fallback
   }
-  return normalized.length > 26 ? `${normalized.slice(0, 26)}...` : normalized
+  return normalized
 }
 
 const hasMessageContent = (content) => Boolean(content && content.trim())
@@ -315,7 +435,7 @@ const bubbleClass = (message) => ({
   error: message.meta?.status === 'error'
 })
 
-const renderMarkdown = (content) => marked.parse(content || '')
+const shouldRenderMarkdown = (message) => message.role === 'assistant' && message.meta?.status !== 'streaming'
 
 const updateViewportWidth = () => {
   viewportWidth.value = window.innerWidth
@@ -328,6 +448,17 @@ const scrollToBottom = () => {
   if (messagesContainer.value) {
     messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
   }
+}
+
+const scheduleScrollToBottom = () => {
+  if (scrollAnimationFrame) {
+    return
+  }
+
+  scrollAnimationFrame = window.requestAnimationFrame(() => {
+    scrollAnimationFrame = 0
+    scrollToBottom()
+  })
 }
 
 const resizeTextarea = () => {
@@ -347,14 +478,75 @@ const focusInput = () => {
   })
 }
 
+const formatRelativeTime = (timestamp) => {
+  if (!timestamp) {
+    return ''
+  }
+
+  const diff = Date.now() - timestamp
+  if (diff < 60 * 1000) {
+    return '刚刚'
+  }
+  if (diff < 60 * 60 * 1000) {
+    return `${Math.max(1, Math.floor(diff / (60 * 1000)))} 分钟前`
+  }
+  if (diff < 24 * 60 * 60 * 1000) {
+    return `${Math.max(1, Math.floor(diff / (60 * 60 * 1000)))} 小时前`
+  }
+  if (diff < 7 * 24 * 60 * 60 * 1000) {
+    return `${Math.max(1, Math.floor(diff / (24 * 60 * 60 * 1000)))} 天前`
+  }
+
+  return new Date(timestamp).toLocaleDateString('zh-CN', {
+    month: 'numeric',
+    day: 'numeric'
+  })
+}
+
 const sessionMetaText = (session) => {
+  const timeText = session.lastMessageAt ? formatRelativeTime(session.lastMessageAt) : ''
   if (session.historyLoaded) {
-    return session.messages.length ? `${session.messages.length} 条消息` : '暂无历史消息'
+    if (session.messages.length) {
+      return `${session.messages.length} 条消息${timeText ? ` · ${timeText}` : ''}`
+    }
+    return timeText ? `暂无历史消息 · ${timeText}` : '暂无历史消息'
   }
   if (session.historyUnavailable) {
-    return '历史暂不可用'
+    return timeText ? `历史暂不可用 · ${timeText}` : '历史暂不可用'
   }
-  return '等待载入历史'
+  return timeText ? `最近更新 ${timeText}` : '等待载入历史'
+}
+
+const updateSessionState = (sessionId, patch) => {
+  if (!sessions.value[sessionId]) {
+    return
+  }
+
+  sessions.value = {
+    ...sessions.value,
+    [sessionId]: {
+      ...sessions.value[sessionId],
+      ...patch
+    }
+  }
+}
+
+const setSessionAction = (sessionId, action) => {
+  sessionActionTarget.value = sessionId
+  sessionActionType.value = action
+}
+
+const clearSessionAction = (sessionId, action) => {
+  if (sessionActionTarget.value === sessionId && sessionActionType.value === action) {
+    sessionActionTarget.value = ''
+    sessionActionType.value = ''
+  }
+}
+
+const isSessionBusy = (sessionId) => sessionActionTarget.value === sessionId
+
+const pickNextVisibleSessionId = (sessionMap) => {
+  return getVisibleSessionsFromMap(sessionMap)[0]?.id || ''
 }
 
 const persistCurrentSessionMessages = () => {
@@ -370,20 +562,20 @@ const persistCurrentSessionMessages = () => {
       messages: cloneMessages(currentMessages.value),
       historyLoaded: true,
       historyUnavailable: false,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      lastMessageAt: Date.now()
     }
   }
 }
 
-const updateMessage = (messageId, updater, persist = true) => {
-  const nextMessages = cloneMessages(currentMessages.value)
-  const target = nextMessages.find((message) => message.id === messageId)
+const updateMessage = (messageId, updater, { persist = true } = {}) => {
+  const target = currentMessages.value.find((message) => message.id === messageId)
   if (!target) {
     return
   }
 
   updater(target)
-  currentMessages.value = nextMessages
+  syncMessageRenderState(target)
 
   if (persist) {
     persistCurrentSessionMessages()
@@ -399,7 +591,10 @@ const registerNewSession = (sessionId, seedQuestion) => {
       messages: cloneMessages(currentMessages.value),
       historyLoaded: true,
       historyUnavailable: false,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
+      lastMessageAt: Date.now(),
+      pinned: false,
+      archived: false
     }
   }
   currentSessionId.value = normalizedId
@@ -425,7 +620,8 @@ const loadSessionHistory = async (sessionId, { silent = false } = {}) => {
           messages: mappedMessages,
           historyLoaded: true,
           historyUnavailable: mappedMessages.length === 0,
-          updatedAt: sessions.value[sessionId].updatedAt || Date.now()
+          updatedAt: sessions.value[sessionId].updatedAt || Date.now(),
+          lastMessageAt: sessions.value[sessionId].lastMessageAt || sessions.value[sessionId].updatedAt || Date.now()
         }
       }
 
@@ -505,7 +701,11 @@ const switchSession = async (sessionId, options = {}) => {
 const syncSessions = async ({ silent = false } = {}) => {
   syncing.value = true
   try {
-    const response = await api.get('/AI/chat/sessions')
+    const response = await api.get('/AI/chat/sessions', {
+      params: {
+        includeArchived: includeArchived.value
+      }
+    })
     if (response.data?.status_code === 1000) {
       const incomingSessions = Array.isArray(response.data.sessions) ? response.data.sessions : []
       const nextSessions = {}
@@ -517,27 +717,45 @@ const syncSessions = async ({ silent = false } = {}) => {
         }
 
         const existing = sessions.value[sessionId]
+        const title = normalizeSessionName(session.Title || session.title || session.name || existing?.name || '未命名会话')
+        const updatedAt = normalizeSessionTimestamp(
+          session.updatedAt || session.UpdatedAt || session.updated_at || existing?.updatedAt,
+          Date.now() - index
+        )
+        const lastMessageAt = normalizeSessionTimestamp(
+          session.lastMessageAt || session.LastMessageAt || session.last_message_at || updatedAt,
+          updatedAt
+        )
+
         nextSessions[sessionId] = {
           id: sessionId,
-          name: normalizeSessionName(session.Title || existing?.name || '未命名会话'),
+          name: title,
           messages: existing?.messages ? cloneMessages(existing.messages) : [],
           historyLoaded: existing?.historyLoaded || false,
           historyUnavailable: existing?.historyUnavailable || false,
-          updatedAt: existing?.updatedAt || Date.now() - index
+          updatedAt,
+          lastMessageAt,
+          pinned: Boolean(session.pinned ?? existing?.pinned),
+          archived: Boolean(session.archived ?? existing?.archived)
         }
       })
 
       sessions.value = nextSessions
 
       if (!currentSessionId.value) {
-        const firstSession = Object.keys(nextSessions)[0]
+        const firstSession = pickNextVisibleSessionId(nextSessions)
         if (firstSession) {
           await switchSession(firstSession, { silent: true })
         } else {
           startNewChat()
         }
       } else if (!nextSessions[currentSessionId.value]) {
-        startNewChat()
+        const nextSessionId = pickNextVisibleSessionId(nextSessions)
+        if (nextSessionId) {
+          await switchSession(nextSessionId, { silent: true })
+        } else {
+          startNewChat()
+        }
       }
 
       if (!silent) {
@@ -562,38 +780,138 @@ const toggleSidebar = () => {
   }
 }
 
-const deleteSession = async (sessionId) => {
-  const session = sessions.value[sessionId]
+const renameSession = async (session) => {
+  if (!session || typeof window === 'undefined') {
+    return
+  }
+
+  const nextName = window.prompt('请输入新的会话名称', session.name || '')
+  if (nextName === null) {
+    return
+  }
+
+  const title = normalizeSessionName(nextName, '')
+  if (!title) {
+    showToast('会话名称不能为空', 'warning')
+    return
+  }
+
+  if (title === session.name) {
+    return
+  }
+
+  setSessionAction(session.id, 'rename')
+  try {
+    const response = await api.post('/AI/chat/session/rename', {
+      sessionId: session.id,
+      title
+    })
+
+    if (response.data?.status_code !== 1000) {
+      throw new Error(response.data?.status_msg || '重命名失败')
+    }
+
+    updateSessionState(session.id, {
+      name: title,
+      updatedAt: Date.now()
+    })
+    showToast('会话名称已更新', 'success', { duration: 1600 })
+  } catch (error) {
+    console.error('Rename session error:', error)
+    showToast(error.message || '重命名失败', 'error')
+  } finally {
+    clearSessionAction(session.id, 'rename')
+  }
+}
+
+const toggleSessionPin = async (session) => {
   if (!session) {
     return
   }
 
+  const nextPinned = !session.pinned
+  setSessionAction(session.id, 'pin')
+  try {
+    const response = await api.post('/AI/chat/session/pin', {
+      sessionId: session.id,
+      pinned: nextPinned
+    })
+
+    if (response.data?.status_code !== 1000) {
+      throw new Error(response.data?.status_msg || '更新置顶状态失败')
+    }
+
+    updateSessionState(session.id, {
+      pinned: nextPinned,
+      updatedAt: Date.now()
+    })
+    showToast(nextPinned ? '会话已置顶' : '会话已取消置顶', 'success', { duration: 1600 })
+  } catch (error) {
+    console.error('Toggle pin error:', error)
+    showToast(error.message || '更新置顶状态失败', 'error')
+  } finally {
+    clearSessionAction(session.id, 'pin')
+  }
+}
+
+const toggleSessionArchive = async (session) => {
+  if (!session) {
+    return
+  }
+
+  const nextArchived = !session.archived
   const confirmed = await confirmAction({
-    title: '移除当前会话？',
-    message: '这只会从当前前端列表移除，不会调用后端删除接口；下次同步时它仍可能重新出现。',
-    confirmText: '确认移除',
+    title: nextArchived ? '归档当前会话？' : '恢复当前会话？',
+    message: nextArchived
+      ? '归档后会从默认列表隐藏，但不会删除聊天记录。'
+      : '恢复后该会话会重新出现在活跃会话列表中。',
+    confirmText: nextArchived ? '确认归档' : '确认恢复',
     cancelText: '取消',
-    intent: 'danger'
+    intent: nextArchived ? 'danger' : 'primary'
   })
 
   if (!confirmed) {
     return
   }
 
-  const nextSessions = { ...sessions.value }
-  delete nextSessions[sessionId]
-  sessions.value = nextSessions
+  setSessionAction(session.id, nextArchived ? 'archive' : 'restore')
+  try {
+    const response = await api.post('/AI/chat/session/archive', {
+      sessionId: session.id,
+      archived: nextArchived
+    })
 
-  if (currentSessionId.value === sessionId) {
-    const nextSessionId = Object.keys(nextSessions)[0]
-    if (nextSessionId) {
-      await switchSession(nextSessionId, { silent: true })
-    } else {
-      startNewChat()
+    if (response.data?.status_code !== 1000) {
+      throw new Error(response.data?.status_msg || '更新归档状态失败')
     }
-  }
 
-  showToast('已从当前列表移除', 'success', { duration: 1800 })
+    if (nextArchived && !includeArchived.value) {
+      const nextSessions = { ...sessions.value }
+      delete nextSessions[session.id]
+      sessions.value = nextSessions
+
+      if (currentSessionId.value === session.id) {
+        const nextSessionId = pickNextVisibleSessionId(nextSessions)
+        if (nextSessionId) {
+          await switchSession(nextSessionId, { silent: true })
+        } else {
+          startNewChat()
+        }
+      }
+    } else {
+      updateSessionState(session.id, {
+        archived: nextArchived,
+        updatedAt: Date.now()
+      })
+    }
+
+    showToast(nextArchived ? '会话已归档' : '会话已恢复', 'success', { duration: 1600 })
+  } catch (error) {
+    console.error('Toggle archive error:', error)
+    showToast(error.message || '更新归档状态失败', 'error')
+  } finally {
+    clearSessionAction(session.id, nextArchived ? 'archive' : 'restore')
+  }
 }
 
 const buildDraftMessages = (question) => {
@@ -646,34 +964,37 @@ const handleStreaming = async (question, aiMessageId) => {
       }
 
       buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
+      const events = buffer.split('\n\n')
+      buffer = events.pop() || ''
 
-      for (const rawLine of lines) {
-        const line = rawLine.trim()
-        if (!line || line.startsWith('event:')) {
+      for (const rawEvent of events) {
+        const dataLines = rawEvent
+          .split('\n')
+          .map((line) => line.trimEnd())
+          .filter((line) => line.startsWith('data:'))
+
+        if (!dataLines.length) {
           continue
         }
 
-        if (!line.startsWith('data:')) {
+        const data = dataLines
+          .map((line) => line.slice(5).replace(/^ /, ''))
+          .join('\n')
+        const normalizedData = data.trim()
+        if (!normalizedData) {
           continue
         }
 
-        const data = line.slice(5).trim()
-        if (!data) {
-          continue
-        }
-
-        if (data === '[DONE]') {
+        if (normalizedData === '[DONE]') {
           updateMessage(aiMessageId, (message) => {
             message.meta = { ...(message.meta || {}), status: 'done' }
-          })
+          }, { persist: false })
           continue
         }
 
-        if (data.startsWith('{')) {
+        if (normalizedData.startsWith('{')) {
           try {
-            const parsed = JSON.parse(data)
+            const parsed = JSON.parse(normalizedData)
             if (parsed.sessionId) {
               registerNewSession(parsed.sessionId, question)
               continue
@@ -682,18 +1003,21 @@ const handleStreaming = async (question, aiMessageId) => {
               updateMessage(aiMessageId, (message) => {
                 message.content += parsed.content
                 message.meta = { ...(message.meta || {}), status: 'streaming' }
-              })
+              }, { persist: false })
               continue
             }
             if (typeof parsed.message === 'string') {
               throw new Error(parsed.message)
+            }
+            if (parsed.ready) {
+              continue
             }
           } catch (error) {
             if (error instanceof SyntaxError) {
               updateMessage(aiMessageId, (message) => {
                 message.content += data
                 message.meta = { ...(message.meta || {}), status: 'streaming' }
-              })
+              }, { persist: false })
             } else {
               throw error
             }
@@ -702,13 +1026,11 @@ const handleStreaming = async (question, aiMessageId) => {
           updateMessage(aiMessageId, (message) => {
             message.content += data
             message.meta = { ...(message.meta || {}), status: 'streaming' }
-          })
+          }, { persist: false })
         }
 
         await nextTick()
-        requestAnimationFrame(() => {
-          scrollToBottom()
-        })
+        scheduleScrollToBottom()
       }
     }
   } catch (error) {
@@ -851,6 +1173,7 @@ const logout = async () => {
   }
 
   localStorage.removeItem('token')
+  localStorage.removeItem('isAdmin')
   router.push('/login')
 }
 
@@ -862,9 +1185,13 @@ watch(inputMessage, () => {
 
 watch(currentMessages, () => {
   nextTick(() => {
-    scrollToBottom()
+    scheduleScrollToBottom()
   })
 }, { deep: true })
+
+watch(includeArchived, async () => {
+  await syncSessions({ silent: true })
+})
 
 onMounted(async () => {
   window.addEventListener('resize', updateViewportWidth)
@@ -878,6 +1205,9 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateViewportWidth)
+  if (scrollAnimationFrame) {
+    window.cancelAnimationFrame(scrollAnimationFrame)
+  }
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel()
   }
@@ -886,7 +1216,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .chat-shell {
+  width: 100%;
+  height: 100vh;
   min-height: 100vh;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   background:
@@ -920,6 +1253,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   gap: 24px;
+  flex-shrink: 0;
   padding: 18px 24px;
   background: rgba(255, 255, 255, 0.82);
   border-bottom: 1px solid rgba(16, 185, 129, 0.14);
@@ -1105,12 +1439,14 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chat-sidebar {
   width: 300px;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   border-right: 1px solid rgba(16, 185, 129, 0.12);
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(18px);
@@ -1156,11 +1492,56 @@ onBeforeUnmount(() => {
   color: var(--sci-fi-text-muted);
 }
 
+.session-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 20px 16px;
+}
+
+.session-search-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.session-search-label {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--sci-fi-text-muted);
+  font-family: 'Orbitron', sans-serif;
+}
+
+.session-search-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(16, 185, 129, 0.16);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--sci-fi-text-primary);
+}
+
+.session-search-input:focus {
+  outline: none;
+  border-color: rgba(16, 185, 129, 0.36);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.session-archive-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--sci-fi-text-secondary);
+}
+
 .sessions-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 0 14px 18px;
 }
+
 .sessions-empty {
   padding: 18px;
   border-radius: 16px;
@@ -1172,8 +1553,9 @@ onBeforeUnmount(() => {
 
 .session-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   margin-bottom: 10px;
   padding: 8px;
   border-radius: 16px;
@@ -1187,7 +1569,6 @@ onBeforeUnmount(() => {
 }
 
 .session-select {
-  flex: 1;
   min-width: 0;
   padding: 10px 12px;
   border: none;
@@ -1195,6 +1576,39 @@ onBeforeUnmount(() => {
   background: transparent;
   text-align: left;
   cursor: pointer;
+}
+
+.session-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.session-badge {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.session-badge.pin {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--sci-fi-primary);
+}
+
+.session-badge.archive {
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--sci-fi-text-secondary);
 }
 
 .session-name,
@@ -1217,21 +1631,40 @@ onBeforeUnmount(() => {
   color: var(--sci-fi-text-muted);
 }
 
-.delete-btn {
-  flex-shrink: 0;
+.session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 12px 10px;
+}
+
+.session-action-btn {
   padding: 8px 10px;
   border: none;
   border-radius: 10px;
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--sci-fi-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.session-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.session-action-btn.danger {
   background: rgba(239, 68, 68, 0.08);
   color: var(--sci-fi-danger);
-  cursor: pointer;
 }
 
 .chat-main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .status-bar {
@@ -1262,9 +1695,11 @@ onBeforeUnmount(() => {
 
 .messages-panel {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 20px 24px 24px;
   scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 .messages-skeleton,
@@ -1444,6 +1879,10 @@ onBeforeUnmount(() => {
   word-break: break-word;
 }
 
+.stream-plain {
+  white-space: pre-wrap;
+}
+
 .bubble-content :deep(p) {
   margin: 0 0 10px;
 }
@@ -1539,10 +1978,19 @@ onBeforeUnmount(() => {
 }
 
 .input-area {
+  flex-shrink: 0;
   padding: 18px 24px 24px;
   background: rgba(255, 255, 255, 0.82);
   border-top: 1px solid rgba(16, 185, 129, 0.12);
   backdrop-filter: blur(18px);
+}
+
+@supports (height: 100dvh) {
+  .chat-shell {
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+  }
 }
 
 .input-shell {

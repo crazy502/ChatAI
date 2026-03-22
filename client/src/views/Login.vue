@@ -67,6 +67,7 @@ export default {
 
         if (response.data.status_code === 1000) {
           localStorage.setItem('token', response.data.token)
+          localStorage.setItem('isAdmin', response.data.isAdmin ? 'true' : 'false')
           showToast('身份验证通过', 'success')
           setTimeout(() => {
             router.push('/menu')

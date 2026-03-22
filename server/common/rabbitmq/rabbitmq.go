@@ -1,110 +1,173 @@
 package rabbitmq
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"sync"
 
 	"server/config"
 
 	"github.com/streadway/amqp"
 )
 
-// 全局connection对象
-// 所有RabbitMQ都会复用该对象
-var conn *amqp.Connection
+var (
+	conn   *amqp.Connection
+	connMu sync.Mutex
+)
 
-// 初始化connection
-func initConn() {
+func initConn() error {
+	connMu.Lock()
+	defer connMu.Unlock()
+
+	if conn != nil {
+		return nil
+	}
+
 	c := config.GetConfig()
-	mqUrl := fmt.Sprintf(
+	mqURL := fmt.Sprintf(
 		"amqp://%s:%s@%s:%d/%s",
 		c.RabbitmqUsername, c.RabbitmqPassword, c.RabbitmqHost, c.RabbitmqPort, c.RabbitmqVhost,
 	)
-	log.Println("mqUrl is  " + mqUrl)
-	var err error
-	conn, err = amqp.Dial(mqUrl)
+
+	connection, err := amqp.Dial(mqURL)
 	if err != nil {
-		log.Fatalf("RabbitMQ connection failed: %v", err) // 输出错误并退出程序
+		return fmt.Errorf("rabbitmq connection failed: %w", err)
+	}
+
+	conn = connection
+	return nil
+}
+
+func closeSharedConn() {
+	connMu.Lock()
+	defer connMu.Unlock()
+
+	if conn != nil {
+		_ = conn.Close()
+		conn = nil
 	}
 }
 
-// RabbitMQ RabbitMQ结构体
 type RabbitMQ struct {
 	conn     *amqp.Connection
 	channel  *amqp.Channel
 	Exchange string
 	Key      string
+	mu       sync.Mutex
 }
 
-// NewRabbitMQ 创建RabbitMQ对象
 func NewRabbitMQ(exchange string, key string) *RabbitMQ {
 	return &RabbitMQ{Exchange: exchange, Key: key}
 }
 
-// Destroy 断开 channel 和 connection
 func (r *RabbitMQ) Destroy() {
-	_ = r.channel.Close()
-	_ = r.conn.Close()
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.channel != nil {
+		_ = r.channel.Close()
+		r.channel = nil
+	}
+	r.conn = nil
 }
 
-// NewWorkRabbitMQ 创建Work模式的RabbitMQ实例
-func NewWorkRabbitMQ(queue string) *RabbitMQ {
-	// new rabbitmq
+func NewWorkRabbitMQ(queue string) (*RabbitMQ, error) {
 	rabbitmq := NewRabbitMQ("", queue)
 
-	// get connection
-	if conn == nil {
-		initConn()
+	if err := initConn(); err != nil {
+		return nil, err
 	}
 	rabbitmq.conn = conn
 
-	// get channel
-	var err error
-	rabbitmq.channel, err = rabbitmq.conn.Channel()
+	channel, err := rabbitmq.conn.Channel()
 	if err != nil {
-		panic(err.Error())
+		return nil, fmt.Errorf("rabbitmq create channel failed: %w", err)
 	}
+	rabbitmq.channel = channel
 
-	return rabbitmq
+	return rabbitmq, nil
 }
 
-// Publish 发送消息
+func (r *RabbitMQ) declareQueue() (amqp.Queue, error) {
+	if r == nil || r.channel == nil {
+		return amqp.Queue{}, errors.New("rabbitmq channel unavailable")
+	}
+
+	return r.channel.QueueDeclare(
+		r.Key,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+}
+
 func (r *RabbitMQ) Publish(message []byte) error {
-	// 创建队列（不存在时）
-	// 使用默认交换机的情况下，queue即为key
-	_, err := r.channel.QueueDeclare(r.Key, false, false, false, false, nil)
-	if err != nil {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, err := r.declareQueue(); err != nil {
 		return err
 	}
 
-	// 调用 channel 发送消息到队列
-	return r.channel.Publish(r.Exchange, r.Key, false, false,
+	return r.channel.Publish(
+		r.Exchange,
+		r.Key,
+		false,
+		false,
 		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        message,
+			ContentType:  "application/json",
+			Body:         message,
+			DeliveryMode: amqp.Persistent,
 		},
 	)
 }
 
-// Consume 消费者
-// handle: 消息的消费业务函数，用于消费消息
 func (r *RabbitMQ) Consume(handle func(msg *amqp.Delivery) error) {
-	// 创建队列
-	q, err := r.channel.QueueDeclare(r.Key, false, false, false, false, nil)
-	if err != nil {
-		panic(err)
+	r.mu.Lock()
+	if _, err := r.declareQueue(); err != nil {
+		r.mu.Unlock()
+		log.Printf("rabbitmq declare queue failed: %v", err)
+		return
 	}
 
-	// 接收消息
-	msgs, err := r.channel.Consume(q.Name, "", true, false, false, false, nil)
-	if err != nil {
-		panic(err)
+	if err := r.channel.Qos(8, 0, false); err != nil {
+		r.mu.Unlock()
+		log.Printf("rabbitmq qos setup failed: %v", err)
+		return
 	}
 
-	// 处理消息
+	msgs, err := r.channel.Consume(r.Key, "", false, false, false, false, nil)
+	r.mu.Unlock()
+	if err != nil {
+		log.Printf("rabbitmq consume setup failed: %v", err)
+		return
+	}
+
 	for msg := range msgs {
 		if err := handle(&msg); err != nil {
-			fmt.Println(err.Error())
+			if errors.Is(err, ErrDropMessage) {
+				log.Printf("rabbitmq dropping poison message: %v", err)
+				if rejectErr := msg.Reject(false); rejectErr != nil {
+					log.Printf("rabbitmq reject poison message failed: %v", rejectErr)
+				}
+				continue
+			}
+
+			log.Printf("rabbitmq consume failed, requeueing message: %v", err)
+			if nackErr := msg.Nack(false, true); nackErr != nil {
+				log.Printf("rabbitmq nack failed: %v", nackErr)
+			}
+			continue
+		}
+
+		if err := msg.Ack(false); err != nil {
+			log.Printf("rabbitmq ack failed: %v", err)
 		}
 	}
 }

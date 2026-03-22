@@ -1,27 +1,40 @@
 package rabbitmq
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 
-	"server/dao/message"
+	messageDAO "server/dao/message"
 	"server/model"
 
 	"github.com/streadway/amqp"
 )
 
-type MessageMQParam struct {
-	SessionID string `json:"session_id"`
-	Content   string `json:"content"`
-	UserName  string `json:"user_name"`
-	IsUser    bool   `json:"is_user"`
+var ErrDropMessage = errors.New("drop message")
+
+func legacyMessageIdempotencyKey(body []byte) string {
+	sum := sha256.Sum256(body)
+	return "legacy-mq-" + hex.EncodeToString(sum[:])
 }
 
-func GenerateMessageMQParam(sessionID string, content string, userName string, IsUser bool) []byte {
+type MessageMQParam struct {
+	IdempotencyKey string `json:"idempotency_key"`
+	SessionID      string `json:"session_id"`
+	Content        string `json:"content"`
+	UserName       string `json:"user_name"`
+	IsUser         bool   `json:"is_user"`
+}
+
+func GenerateMessageMQParam(message *model.Message) []byte {
 	param := MessageMQParam{
-		SessionID: sessionID,
-		Content:   content,
-		UserName:  userName,
-		IsUser:    IsUser,
+		IdempotencyKey: message.IdempotencyKey,
+		SessionID:      message.SessionID,
+		Content:        message.Content,
+		UserName:       message.UserName,
+		IsUser:         message.IsUser,
 	}
 	data, _ := json.Marshal(param)
 	return data
@@ -29,17 +42,25 @@ func GenerateMessageMQParam(sessionID string, content string, userName string, I
 
 func MQMessage(msg *amqp.Delivery) error {
 	var param MessageMQParam
-	err := json.Unmarshal(msg.Body, &param)
-	if err != nil {
-		return err
+	if err := json.Unmarshal(msg.Body, &param); err != nil {
+		return fmt.Errorf("%w: invalid message body: %v", ErrDropMessage, err)
 	}
+
+	if param.IdempotencyKey == "" {
+		param.IdempotencyKey = legacyMessageIdempotencyKey(msg.Body)
+	}
+
 	newMsg := &model.Message{
-		SessionID: param.SessionID,
-		Content:   param.Content,
-		UserName:  param.UserName,
-		IsUser:    param.IsUser,
+		IdempotencyKey: param.IdempotencyKey,
+		SessionID:      param.SessionID,
+		Content:        param.Content,
+		UserName:       param.UserName,
+		IsUser:         param.IsUser,
 	}
-	//消费者异步插入到数据库中
-	message.CreateMessage(newMsg)
+
+	if _, err := messageDAO.CreateMessage(newMsg); err != nil {
+		return fmt.Errorf("persist message failed: %w", err)
+	}
+
 	return nil
 }

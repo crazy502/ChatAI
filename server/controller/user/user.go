@@ -14,12 +14,13 @@ type (
 	//这里的Username只能是账号登录，和我做的另一个项目有区别（邮箱账号均可)
 	LoginRequest struct {
 		Username string `json:"username"`
-		Password string `json:password`
+		Password string `json:"password"`
 	}
 	// omitempty当字段为空的时候，不返回这个东西
 	LoginResponse struct {
 		controller.Response
-		Token string `json:"token,omitempty"`
+		Token   string `json:"token,omitempty"`
+		IsAdmin bool   `json:"isAdmin"`
 	}
 	//验证码由后端生成，存放到redis中，固然需要先发送一次请求CaptchaRequest,然后用返回的验证码
 	//邮箱以及密码进行注册，后续再将账号进行返回
@@ -31,7 +32,8 @@ type (
 	//注册成功之后，直接让其进行登录状态
 	RegisterResponse struct {
 		controller.Response
-		Token string `json:"token,omitempty"`
+		Token   string `json:"token,omitempty"`
+		IsAdmin bool   `json:"isAdmin"`
 	}
 
 	CaptchaRequest struct {
@@ -52,7 +54,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, code_ := user.Login(req.Username, req.Password)
+	token, isAdmin, code_ := user.Login(req.Username, req.Password)
 	if code_ != code.CodeSuccess {
 		c.JSON(http.StatusOK, res.CodeOf(code_))
 		return
@@ -60,6 +62,7 @@ func Login(c *gin.Context) {
 
 	res.Success()
 	res.Token = token
+	res.IsAdmin = isAdmin
 	c.JSON(http.StatusOK, res)
 
 }
@@ -73,7 +76,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	token, code_ := user.Register(req.Email, req.Password, req.Captcha)
+	token, isAdmin, code_ := user.Register(req.Email, req.Password, req.Captcha)
 	if code_ != code.CodeSuccess {
 		c.JSON(http.StatusOK, res.CodeOf(code_))
 		return
@@ -81,6 +84,7 @@ func Register(c *gin.Context) {
 
 	res.Success()
 	res.Token = token
+	res.IsAdmin = isAdmin
 	c.JSON(http.StatusOK, res)
 }
 

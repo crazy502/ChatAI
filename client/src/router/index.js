@@ -1,9 +1,11 @@
-﻿import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
+import { isAdminToken } from '../utils/auth'
 
 const Login = () => import(/* webpackChunkName: "auth" */ '../views/Login.vue')
 const Register = () => import(/* webpackChunkName: "auth" */ '../views/Register.vue')
 const Menu = () => import(/* webpackChunkName: "menu" */ '../views/Menu.vue')
 const AIChat = () => import(/* webpackChunkName: "chat" */ '../views/AIChat.vue')
+const AdminMetrics = () => import(/* webpackChunkName: "admin" */ '../views/AdminMetrics.vue')
 
 const routes = [
   {
@@ -39,6 +41,16 @@ const routes = [
       requiresAuth: true,
       title: 'GopherAI | 智能对话'
     }
+  },
+  {
+    path: '/admin-metrics',
+    name: 'AdminMetrics',
+    component: AdminMetrics,
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'GopherAI | 管理监控'
+    }
   }
 ]
 
@@ -52,11 +64,18 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
+
   if (to.matched.some((record) => record.meta.requiresAuth) && !token) {
     next('/login')
-  } else {
-    next()
+    return
   }
+
+  if (to.matched.some((record) => record.meta.requiresAdmin) && !isAdminToken(token)) {
+    next('/menu')
+    return
+  }
+
+  next()
 })
 
 router.afterEach((to) => {
@@ -64,4 +83,3 @@ router.afterEach((to) => {
 })
 
 export default router
-

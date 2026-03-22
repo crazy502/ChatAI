@@ -19,9 +19,18 @@
         <p class="hero-kicker">INTELLIGENT WORKSPACE</p>
         <h2 class="hero-title">把问题、思路和答案集中在一个协作界面里</h2>
         <p class="hero-desc">
-          你可以进入智能对话模块，使用 Qwen 与 DeepSeek 进行问答、总结、分析和内容整理。
+          你可以进入智能对话模块进行问答和分析。
+          <template v-if="hasAdminAccess">
+            当前账号也拥有管理员权限，可以进入系统监控面板查看请求量、错误率与模型延迟表现。
+          </template>
+          <template v-else>
+            当前账号暂无管理员权限，因此不会展示管理监控入口。
+          </template>
         </p>
-        <button class="enter-btn" type="button" @click="enterChat">进入智能对话</button>
+        <div class="hero-actions">
+          <button class="enter-btn" type="button" @click="enterChat">进入智能对话</button>
+          <button v-if="hasAdminAccess" class="secondary-btn" type="button" @click="openMetrics">查看监控面板</button>
+        </div>
       </section>
 
       <section class="stats-grid">
@@ -42,15 +51,22 @@
           <strong class="stat-value">Qwen / DeepSeek</strong>
           <p class="stat-desc">聊天页可直接切换模型与流式响应模式。</p>
         </article>
+
+        <article class="stat-card">
+          <span class="stat-label">管理监控</span>
+          <strong class="stat-value">{{ hasAdminAccess ? '实时可视化' : '管理员可用' }}</strong>
+          <p class="stat-desc">{{ hasAdminAccess ? '可查看请求量、错误率、接口延迟与模型调用表现。' : '当前账号没有管理权限，监控面板入口已隐藏。' }}</p>
+        </article>
       </section>
     </main>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUi } from '../composables/useUi'
+import { isAdminToken } from '../utils/auth'
 
 export default {
   name: 'MenuView',
@@ -58,6 +74,7 @@ export default {
     const router = useRouter()
     const { confirmAction } = useUi()
     const uptime = ref('00:00:00')
+    const hasAdminAccess = computed(() => isAdminToken(localStorage.getItem('token')))
     let uptimeInterval = null
 
     const updateUptime = () => {
@@ -87,6 +104,10 @@ export default {
       router.push('/ai-chat')
     }
 
+    const openMetrics = () => {
+      router.push('/admin-metrics')
+    }
+
     const handleLogout = async () => {
       const confirmed = await confirmAction({
         title: '断开当前连接？',
@@ -101,12 +122,15 @@ export default {
       }
 
       localStorage.removeItem('token')
+      localStorage.removeItem('isAdmin')
       router.push('/login')
     }
 
     return {
       uptime,
+      hasAdminAccess,
       enterChat,
+      openMetrics,
       handleLogout
     }
   }
@@ -255,8 +279,14 @@ export default {
   color: var(--sci-fi-text-secondary);
 }
 
-.enter-btn {
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-top: 28px;
+}
+
+.enter-btn {
   padding: 14px 20px;
   border: none;
   border-radius: 16px;
@@ -267,9 +297,21 @@ export default {
   cursor: pointer;
 }
 
+.secondary-btn {
+  padding: 14px 20px;
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--sci-fi-text-primary);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 18px;
 }
 
@@ -333,7 +375,8 @@ export default {
   }
 
   .logout-btn,
-  .enter-btn {
+  .enter-btn,
+  .secondary-btn {
     width: 100%;
   }
 }

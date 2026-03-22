@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"server/config"
 	"strings"
+
+	"server/config"
 
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/components/model"
@@ -14,14 +15,14 @@ import (
 
 type StreamCallback func(msg string)
 
-// AIModel 定义AI模型接口
+// AIModel 瀹氫箟AI妯″瀷鎺ュ彛
 type AIModel interface {
 	GenerateResponse(ctx context.Context, messages []*schema.Message) (*schema.Message, error)
 	StreamResponse(ctx context.Context, messages []*schema.Message, cb StreamCallback) (string, error)
 	GetModelType() string
 }
 
-// =================== QWEN 实现 ===================
+// =================== QWEN 瀹炵幇 ===================
 type QWENModel struct {
 	llm model.ToolCallingChatModel
 }
@@ -75,17 +76,17 @@ func (q *QWENModel) StreamResponse(ctx context.Context, messages []*schema.Messa
 			return "", fmt.Errorf("qwen stream recv failed: %v", err)
 		}
 		if len(msg.Content) > 0 {
-			fullResp.WriteString(msg.Content) // 聚合
-			cb(msg.Content)                   // 实时调用cb函数，方便主动发送给前端
+			fullResp.WriteString(msg.Content)
+			cb(msg.Content)
 		}
 	}
 
-	return fullResp.String(), nil //返回完整内容，方便后续存储
+	return fullResp.String(), nil
 }
 
 func (q *QWENModel) GetModelType() string { return "qwen" }
 
-// =================== DeepSeek 实现 ===================
+// =================== DeepSeek 瀹炵幇 ===================
 type DeepSeekModel struct {
 	llm model.ToolCallingChatModel
 }
@@ -139,12 +140,12 @@ func (d *DeepSeekModel) StreamResponse(ctx context.Context, messages []*schema.M
 			return "", fmt.Errorf("deepseek stream recv failed: %v", err)
 		}
 		if len(msg.Content) > 0 {
-			fullResp.WriteString(msg.Content) // 聚合
-			cb(msg.Content)                   // 实时调用cb函数，方便主动发送给前端
+			fullResp.WriteString(msg.Content)
+			cb(msg.Content)
 		}
 	}
 
-	return fullResp.String(), nil //返回完整内容，方便后续存储
+	return fullResp.String(), nil
 }
 
 func (d *DeepSeekModel) GetModelType() string { return "deepseek" }

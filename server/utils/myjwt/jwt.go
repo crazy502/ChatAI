@@ -11,13 +11,15 @@ import (
 type Claims struct {
 	ID       int64  `json:"id"`
 	Username string `json:"username"`
+	IsAdmin  bool   `json:"is_admin"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(id int64, username string) (string, error) {
+func GenerateToken(id int64, username string, isAdmin bool) (string, error) {
 	claims := Claims{
 		ID:       id,
 		Username: username,
+		IsAdmin:  isAdmin,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(config.GetConfig().ExpireDuration) * time.Hour)),
 			Issuer:    config.GetConfig().Issuer,
@@ -32,13 +34,13 @@ func GenerateToken(id int64, username string) (string, error) {
 }
 
 // ParseToken 解析Token
-func ParseToken(token string) (string, bool) {
+func ParseToken(token string) (*Claims, bool) {
 	claims := new(Claims)
 	t, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(config.GetConfig().Key), nil
 	})
-	if !t.Valid || err != nil || claims == nil {
-		return "", false
+	if err != nil || t == nil || !t.Valid || claims == nil {
+		return nil, false
 	}
-	return claims.Username, true
+	return claims, true
 }
