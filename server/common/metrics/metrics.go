@@ -1,9 +1,7 @@
 package metrics
 
 import (
-	"fmt"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -11,126 +9,76 @@ import (
 )
 
 type Overview struct {
-	UptimeSeconds         int64   `json:"uptimeSeconds"`
-	RequestsTotal         int64   `json:"requestsTotal"`
-	ErrorsTotal           int64   `json:"errorsTotal"`
-	ErrorRate             float64 `json:"errorRate"`
-	AvgLatencyMs          float64 `json:"avgLatencyMs"`
-	RoutesTracked         int     `json:"routesTracked"`
-	ModelsTracked         int     `json:"modelsTracked"`
-	UsersTracked          int     `json:"usersTracked"`
-	BusinessCodesTracked  int     `json:"businessCodesTracked"`
-	RecentFailuresTracked int     `json:"recentFailuresTracked"`
+	UptimeSeconds int64   `json:"uptimeSeconds"`
+	RequestsTotal int64   `json:"requestsTotal"`
+	ErrorsTotal   int64   `json:"errorsTotal"`
+	ErrorRate     float64 `json:"errorRate"`
+	AvgLatencyMs  float64 `json:"avgLatencyMs"`
+	RoutesTracked int     `json:"routesTracked"`
+	ModelsTracked int     `json:"modelsTracked"`
 }
 
 type RouteSnapshot struct {
-	Method           string  `json:"method"`
-	Path             string  `json:"path"`
-	RequestsTotal    int64   `json:"requestsTotal"`
-	ErrorsTotal      int64   `json:"errorsTotal"`
-	ErrorRate        float64 `json:"errorRate"`
-	AvgLatencyMs     float64 `json:"avgLatencyMs"`
-	LastLatencyMs    float64 `json:"lastLatencyMs"`
-	LastBusinessCode int64   `json:"lastBusinessCode"`
-	LastHTTPStatus   int     `json:"lastHttpStatus"`
-	LastUserName     string  `json:"lastUserName"`
+	Method         string  `json:"method"`
+	Path           string  `json:"path"`
+	RequestsTotal  int64   `json:"requestsTotal"`
+	ErrorsTotal    int64   `json:"errorsTotal"`
+	ErrorRate      float64 `json:"errorRate"`
+	AvgLatencyMs   float64 `json:"avgLatencyMs"`
+	LastLatencyMs  float64 `json:"lastLatencyMs"`
+	LastHTTPStatus int     `json:"lastHttpStatus"`
 }
 
 type ModelSnapshot struct {
-	ModelType        string    `json:"modelType"`
-	Operation        string    `json:"operation"`
-	RequestsTotal    int64     `json:"requestsTotal"`
-	ErrorsTotal      int64     `json:"errorsTotal"`
-	ErrorRate        float64   `json:"errorRate"`
-	AvgLatencyMs     float64   `json:"avgLatencyMs"`
-	LastLatencyMs    float64   `json:"lastLatencyMs"`
-	LastSuccessAt    time.Time `json:"lastSuccessAt,omitempty"`
-	LastFailureAt    time.Time `json:"lastFailureAt,omitempty"`
-	LastUserName     string    `json:"lastUserName,omitempty"`
-	LastErrorMessage string    `json:"lastErrorMessage,omitempty"`
-}
-
-type UserSnapshot struct {
-	UserName      string    `json:"userName"`
+	ModelType     string    `json:"modelType"`
+	Operation     string    `json:"operation"`
 	RequestsTotal int64     `json:"requestsTotal"`
 	ErrorsTotal   int64     `json:"errorsTotal"`
 	ErrorRate     float64   `json:"errorRate"`
 	AvgLatencyMs  float64   `json:"avgLatencyMs"`
-	LastSeenAt    time.Time `json:"lastSeenAt,omitempty"`
+	LastLatencyMs float64   `json:"lastLatencyMs"`
+	LastSuccessAt time.Time `json:"lastSuccessAt,omitempty"`
+	LastFailureAt time.Time `json:"lastFailureAt,omitempty"`
 }
 
-type BusinessCodeSnapshot struct {
-	Method         string    `json:"method"`
-	Path           string    `json:"path"`
-	BusinessCode   int64     `json:"businessCode"`
-	RequestsTotal  int64     `json:"requestsTotal"`
-	ErrorsTotal    int64     `json:"errorsTotal"`
-	ErrorRate      float64   `json:"errorRate"`
-	AvgLatencyMs   float64   `json:"avgLatencyMs"`
-	LastHTTPStatus int       `json:"lastHttpStatus"`
-	LastSeenAt     time.Time `json:"lastSeenAt,omitempty"`
+type OverviewArchivePoint struct {
+	Timestamp     time.Time `json:"timestamp"`
+	RequestsTotal int64     `json:"requestsTotal"`
+	ErrorsTotal   int64     `json:"errorsTotal"`
+	ErrorRate     float64   `json:"errorRate"`
+	AvgLatencyMs  float64   `json:"avgLatencyMs"`
 }
 
-type ModelFailureSnapshot struct {
-	ModelType    string    `json:"modelType"`
-	Operation    string    `json:"operation"`
-	UserName     string    `json:"userName"`
-	ErrorMessage string    `json:"errorMessage"`
-	LatencyMs    float64   `json:"latencyMs"`
-	OccurredAt   time.Time `json:"occurredAt"`
+type AllMetricsSnapshot struct {
+	GeneratedAt    time.Time              `json:"generatedAt"`
+	Overview       Overview               `json:"overview"`
+	Routes         []RouteSnapshot        `json:"routes"`
+	Models         []ModelSnapshot        `json:"models"`
+	Archives       []OverviewArchivePoint `json:"archives"`
+	ArchiveWindowS int64                  `json:"archiveWindowSeconds"`
 }
 
 type routeState struct {
-	Method           string
-	Path             string
-	RequestsTotal    int64
-	ErrorsTotal      int64
-	TotalLatency     time.Duration
-	LastLatency      time.Duration
-	LastBusinessCode int64
-	LastHTTPStatus   int
-	LastUserName     string
-}
-
-type modelState struct {
-	ModelType        string
-	Operation        string
-	RequestsTotal    int64
-	ErrorsTotal      int64
-	TotalLatency     time.Duration
-	LastLatency      time.Duration
-	LastSuccessAt    time.Time
-	LastFailureAt    time.Time
-	LastUserName     string
-	LastErrorMessage string
-}
-
-type userState struct {
-	UserName      string
-	RequestsTotal int64
-	ErrorsTotal   int64
-	TotalLatency  time.Duration
-	LastSeenAt    time.Time
-}
-
-type businessCodeState struct {
 	Method         string
 	Path           string
-	BusinessCode   int64
 	RequestsTotal  int64
 	ErrorsTotal    int64
 	TotalLatency   time.Duration
+	LastLatency    time.Duration
 	LastHTTPStatus int
 	LastSeenAt     time.Time
 }
 
-type modelFailureState struct {
-	ModelType    string
-	Operation    string
-	UserName     string
-	ErrorMessage string
-	Latency      time.Duration
-	OccurredAt   time.Time
+type modelState struct {
+	ModelType     string
+	Operation     string
+	RequestsTotal int64
+	ErrorsTotal   int64
+	TotalLatency  time.Duration
+	LastLatency   time.Duration
+	LastSuccessAt time.Time
+	LastFailureAt time.Time
+	LastSeenAt    time.Time
 }
 
 type Collector struct {
@@ -141,9 +89,11 @@ type Collector struct {
 	totalRequestDuration time.Duration
 	routes               map[string]*routeState
 	models               map[string]*modelState
-	users                map[string]*userState
-	businessCodes        map[string]*businessCodeState
-	modelFailures        []modelFailureState
+	archives             []OverviewArchivePoint
+	lastArchiveAt        time.Time
+	lastCleanupAt        time.Time
+	archiveSampleEvery   time.Duration
+	retentionWindow      time.Duration
 }
 
 var (
@@ -152,43 +102,85 @@ var (
 )
 
 const (
-	maxRecentModelFailures = 80
-	maxErrorMessageLength  = 240
+	maxOverviewArchives = 720
+	cleanupInterval     = 5 * time.Minute
+	archiveSampleEvery  = 30 * time.Second
+	retentionWindow     = 6 * time.Hour
 )
 
 func GetCollector() *Collector {
 	once.Do(func() {
 		globalCollector = &Collector{
-			startedAt:     time.Now(),
-			routes:        make(map[string]*routeState),
-			models:        make(map[string]*modelState),
-			users:         make(map[string]*userState),
-			businessCodes: make(map[string]*businessCodeState),
+			startedAt:          time.Now(),
+			routes:             make(map[string]*routeState),
+			models:             make(map[string]*modelState),
+			archiveSampleEvery: archiveSampleEvery,
+			retentionWindow:    retentionWindow,
 		}
 	})
 	return globalCollector
 }
 
-func normalizeUserName(userName string) string {
-	value := strings.TrimSpace(userName)
-	if value == "" {
-		return "anonymous"
+func (c *Collector) cleanupLocked(now time.Time) {
+	if !c.lastCleanupAt.IsZero() && now.Sub(c.lastCleanupAt) < cleanupInterval {
+		return
 	}
-	return value
+
+	staleBefore := now.Add(-c.retentionWindow)
+
+	for key, routeMetric := range c.routes {
+		if !routeMetric.LastSeenAt.IsZero() && routeMetric.LastSeenAt.Before(staleBefore) {
+			delete(c.routes, key)
+		}
+	}
+
+	for key, modelMetric := range c.models {
+		if !modelMetric.LastSeenAt.IsZero() && modelMetric.LastSeenAt.Before(staleBefore) {
+			delete(c.models, key)
+		}
+	}
+
+	filteredArchives := c.archives[:0]
+	for _, archive := range c.archives {
+		if archive.Timestamp.After(staleBefore) || archive.Timestamp.Equal(staleBefore) {
+			filteredArchives = append(filteredArchives, archive)
+		}
+	}
+	c.archives = filteredArchives
+	if len(c.archives) > maxOverviewArchives {
+		c.archives = c.archives[len(c.archives)-maxOverviewArchives:]
+	}
+
+	c.lastCleanupAt = now
 }
 
-func trimErrorMessage(message string) string {
-	value := strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(message, "\n", " "), "\r", " "))
-	if value == "" {
-		return "unknown error"
+func (c *Collector) appendArchiveLocked(now time.Time) {
+	if !c.lastArchiveAt.IsZero() && now.Sub(c.lastArchiveAt) < c.archiveSampleEvery {
+		return
 	}
 
-	runes := []rune(value)
-	if len(runes) <= maxErrorMessageLength {
-		return value
+	avgLatency := 0.0
+	if c.requestsTotal > 0 {
+		avgLatency = float64(c.totalRequestDuration.Milliseconds()) / float64(c.requestsTotal)
 	}
 
-	return string(runes[:maxErrorMessageLength]) + "..."
+	errorRate := 0.0
+	if c.requestsTotal > 0 {
+		errorRate = float64(c.errorsTotal) / float64(c.requestsTotal)
+	}
+
+	c.archives = append(c.archives, OverviewArchivePoint{
+		Timestamp:     now,
+		RequestsTotal: c.requestsTotal,
+		ErrorsTotal:   c.errorsTotal,
+		ErrorRate:     errorRate,
+		AvgLatencyMs:  avgLatency,
+	})
+	c.lastArchiveAt = now
+
+	if len(c.archives) > maxOverviewArchives {
+		c.archives = c.archives[len(c.archives)-maxOverviewArchives:]
+	}
 }
 
 func (c *Collector) RecordRequest(method, path, userName string, latency time.Duration, businessCode int64, httpStatus int) {
@@ -200,8 +192,6 @@ func (c *Collector) RecordRequest(method, path, userName string, latency time.Du
 	if businessCode != 0 && businessCode != int64(code.CodeSuccess) {
 		isError = true
 	}
-
-	normalizedUserName := normalizeUserName(userName)
 	now := time.Now()
 
 	c.mu.Lock()
@@ -226,46 +216,14 @@ func (c *Collector) RecordRequest(method, path, userName string, latency time.Du
 	routeMetric.RequestsTotal++
 	routeMetric.TotalLatency += latency
 	routeMetric.LastLatency = latency
-	routeMetric.LastBusinessCode = businessCode
 	routeMetric.LastHTTPStatus = httpStatus
-	routeMetric.LastUserName = normalizedUserName
+	routeMetric.LastSeenAt = now
 	if isError {
 		routeMetric.ErrorsTotal++
 	}
 
-	userMetric, exists := c.users[normalizedUserName]
-	if !exists {
-		userMetric = &userState{
-			UserName: normalizedUserName,
-		}
-		c.users[normalizedUserName] = userMetric
-	}
-
-	userMetric.RequestsTotal++
-	userMetric.TotalLatency += latency
-	userMetric.LastSeenAt = now
-	if isError {
-		userMetric.ErrorsTotal++
-	}
-
-	codeKey := fmt.Sprintf("%s:%d", routeKey, businessCode)
-	codeMetric, exists := c.businessCodes[codeKey]
-	if !exists {
-		codeMetric = &businessCodeState{
-			Method:       method,
-			Path:         path,
-			BusinessCode: businessCode,
-		}
-		c.businessCodes[codeKey] = codeMetric
-	}
-
-	codeMetric.RequestsTotal++
-	codeMetric.TotalLatency += latency
-	codeMetric.LastHTTPStatus = httpStatus
-	codeMetric.LastSeenAt = now
-	if isError {
-		codeMetric.ErrorsTotal++
-	}
+	c.appendArchiveLocked(now)
+	c.cleanupLocked(now)
 }
 
 func (c *Collector) RecordModel(modelType, operation, userName string, latency time.Duration, err error) {
@@ -276,7 +234,6 @@ func (c *Collector) RecordModel(modelType, operation, userName string, latency t
 		operation = "unknown"
 	}
 
-	normalizedUserName := normalizeUserName(userName)
 	now := time.Now()
 
 	c.mu.Lock()
@@ -295,29 +252,18 @@ func (c *Collector) RecordModel(modelType, operation, userName string, latency t
 	modelMetric.RequestsTotal++
 	modelMetric.TotalLatency += latency
 	modelMetric.LastLatency = latency
-	modelMetric.LastUserName = normalizedUserName
+	modelMetric.LastSeenAt = now
 
 	if err == nil {
 		modelMetric.LastSuccessAt = now
+		c.cleanupLocked(now)
 		return
 	}
 
-	errorMessage := trimErrorMessage(err.Error())
 	modelMetric.ErrorsTotal++
 	modelMetric.LastFailureAt = now
-	modelMetric.LastErrorMessage = errorMessage
 
-	c.modelFailures = append(c.modelFailures, modelFailureState{
-		ModelType:    modelType,
-		Operation:    operation,
-		UserName:     normalizedUserName,
-		ErrorMessage: errorMessage,
-		Latency:      latency,
-		OccurredAt:   now,
-	})
-	if len(c.modelFailures) > maxRecentModelFailures {
-		c.modelFailures = c.modelFailures[len(c.modelFailures)-maxRecentModelFailures:]
-	}
+	c.cleanupLocked(now)
 }
 
 func (c *Collector) Overview() Overview {
@@ -335,16 +281,13 @@ func (c *Collector) Overview() Overview {
 	}
 
 	return Overview{
-		UptimeSeconds:         int64(time.Since(c.startedAt).Seconds()),
-		RequestsTotal:         c.requestsTotal,
-		ErrorsTotal:           c.errorsTotal,
-		ErrorRate:             errorRate,
-		AvgLatencyMs:          avgLatency,
-		RoutesTracked:         len(c.routes),
-		ModelsTracked:         len(c.models),
-		UsersTracked:          len(c.users),
-		BusinessCodesTracked:  len(c.businessCodes),
-		RecentFailuresTracked: len(c.modelFailures),
+		UptimeSeconds: int64(time.Since(c.startedAt).Seconds()),
+		RequestsTotal: c.requestsTotal,
+		ErrorsTotal:   c.errorsTotal,
+		ErrorRate:     errorRate,
+		AvgLatencyMs:  avgLatency,
+		RoutesTracked: len(c.routes),
+		ModelsTracked: len(c.models),
 	}
 }
 
@@ -362,16 +305,14 @@ func (c *Collector) RouteSnapshots() []RouteSnapshot {
 		}
 
 		snapshots = append(snapshots, RouteSnapshot{
-			Method:           routeMetric.Method,
-			Path:             routeMetric.Path,
-			RequestsTotal:    routeMetric.RequestsTotal,
-			ErrorsTotal:      routeMetric.ErrorsTotal,
-			ErrorRate:        errorRate,
-			AvgLatencyMs:     avgLatency,
-			LastLatencyMs:    float64(routeMetric.LastLatency.Milliseconds()),
-			LastBusinessCode: routeMetric.LastBusinessCode,
-			LastHTTPStatus:   routeMetric.LastHTTPStatus,
-			LastUserName:     routeMetric.LastUserName,
+			Method:         routeMetric.Method,
+			Path:           routeMetric.Path,
+			RequestsTotal:  routeMetric.RequestsTotal,
+			ErrorsTotal:    routeMetric.ErrorsTotal,
+			ErrorRate:      errorRate,
+			AvgLatencyMs:   avgLatency,
+			LastLatencyMs:  float64(routeMetric.LastLatency.Milliseconds()),
+			LastHTTPStatus: routeMetric.LastHTTPStatus,
 		})
 	}
 
@@ -399,17 +340,15 @@ func (c *Collector) ModelSnapshots() []ModelSnapshot {
 		}
 
 		snapshots = append(snapshots, ModelSnapshot{
-			ModelType:        modelMetric.ModelType,
-			Operation:        modelMetric.Operation,
-			RequestsTotal:    modelMetric.RequestsTotal,
-			ErrorsTotal:      modelMetric.ErrorsTotal,
-			ErrorRate:        errorRate,
-			AvgLatencyMs:     avgLatency,
-			LastLatencyMs:    float64(modelMetric.LastLatency.Milliseconds()),
-			LastSuccessAt:    modelMetric.LastSuccessAt,
-			LastFailureAt:    modelMetric.LastFailureAt,
-			LastUserName:     modelMetric.LastUserName,
-			LastErrorMessage: modelMetric.LastErrorMessage,
+			ModelType:     modelMetric.ModelType,
+			Operation:     modelMetric.Operation,
+			RequestsTotal: modelMetric.RequestsTotal,
+			ErrorsTotal:   modelMetric.ErrorsTotal,
+			ErrorRate:     errorRate,
+			AvgLatencyMs:  avgLatency,
+			LastLatencyMs: float64(modelMetric.LastLatency.Milliseconds()),
+			LastSuccessAt: modelMetric.LastSuccessAt,
+			LastFailureAt: modelMetric.LastFailureAt,
 		})
 	}
 
@@ -426,97 +365,26 @@ func (c *Collector) ModelSnapshots() []ModelSnapshot {
 	return snapshots
 }
 
-func (c *Collector) UserSnapshots() []UserSnapshot {
+func (c *Collector) ArchiveSnapshots() []OverviewArchivePoint {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	snapshots := make([]UserSnapshot, 0, len(c.users))
-	for _, userMetric := range c.users {
-		errorRate := 0.0
-		avgLatency := 0.0
-		if userMetric.RequestsTotal > 0 {
-			errorRate = float64(userMetric.ErrorsTotal) / float64(userMetric.RequestsTotal)
-			avgLatency = float64(userMetric.TotalLatency.Milliseconds()) / float64(userMetric.RequestsTotal)
-		}
-
-		snapshots = append(snapshots, UserSnapshot{
-			UserName:      userMetric.UserName,
-			RequestsTotal: userMetric.RequestsTotal,
-			ErrorsTotal:   userMetric.ErrorsTotal,
-			ErrorRate:     errorRate,
-			AvgLatencyMs:  avgLatency,
-			LastSeenAt:    userMetric.LastSeenAt,
-		})
-	}
-
-	sort.Slice(snapshots, func(i, j int) bool {
-		if snapshots[i].RequestsTotal == snapshots[j].RequestsTotal {
-			return snapshots[i].UserName < snapshots[j].UserName
-		}
-		return snapshots[i].RequestsTotal > snapshots[j].RequestsTotal
-	})
-
+	snapshots := make([]OverviewArchivePoint, len(c.archives))
+	copy(snapshots, c.archives)
 	return snapshots
 }
 
-func (c *Collector) BusinessCodeSnapshots() []BusinessCodeSnapshot {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+func (c *Collector) AllMetricsSnapshot() AllMetricsSnapshot {
+	c.mu.Lock()
+	c.cleanupLocked(time.Now())
+	c.mu.Unlock()
 
-	snapshots := make([]BusinessCodeSnapshot, 0, len(c.businessCodes))
-	for _, codeMetric := range c.businessCodes {
-		errorRate := 0.0
-		avgLatency := 0.0
-		if codeMetric.RequestsTotal > 0 {
-			errorRate = float64(codeMetric.ErrorsTotal) / float64(codeMetric.RequestsTotal)
-			avgLatency = float64(codeMetric.TotalLatency.Milliseconds()) / float64(codeMetric.RequestsTotal)
-		}
-
-		snapshots = append(snapshots, BusinessCodeSnapshot{
-			Method:         codeMetric.Method,
-			Path:           codeMetric.Path,
-			BusinessCode:   codeMetric.BusinessCode,
-			RequestsTotal:  codeMetric.RequestsTotal,
-			ErrorsTotal:    codeMetric.ErrorsTotal,
-			ErrorRate:      errorRate,
-			AvgLatencyMs:   avgLatency,
-			LastHTTPStatus: codeMetric.LastHTTPStatus,
-			LastSeenAt:     codeMetric.LastSeenAt,
-		})
+	return AllMetricsSnapshot{
+		GeneratedAt:    time.Now(),
+		Overview:       c.Overview(),
+		Routes:         c.RouteSnapshots(),
+		Models:         c.ModelSnapshots(),
+		Archives:       c.ArchiveSnapshots(),
+		ArchiveWindowS: int64(c.retentionWindow.Seconds()),
 	}
-
-	sort.Slice(snapshots, func(i, j int) bool {
-		if snapshots[i].ErrorsTotal == snapshots[j].ErrorsTotal {
-			if snapshots[i].RequestsTotal == snapshots[j].RequestsTotal {
-				if snapshots[i].Path == snapshots[j].Path {
-					return snapshots[i].BusinessCode < snapshots[j].BusinessCode
-				}
-				return snapshots[i].Path < snapshots[j].Path
-			}
-			return snapshots[i].RequestsTotal > snapshots[j].RequestsTotal
-		}
-		return snapshots[i].ErrorsTotal > snapshots[j].ErrorsTotal
-	})
-
-	return snapshots
-}
-
-func (c *Collector) ModelFailureSnapshots() []ModelFailureSnapshot {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	snapshots := make([]ModelFailureSnapshot, 0, len(c.modelFailures))
-	for i := len(c.modelFailures) - 1; i >= 0; i-- {
-		failure := c.modelFailures[i]
-		snapshots = append(snapshots, ModelFailureSnapshot{
-			ModelType:    failure.ModelType,
-			Operation:    failure.Operation,
-			UserName:     failure.UserName,
-			ErrorMessage: failure.ErrorMessage,
-			LatencyMs:    float64(failure.Latency.Milliseconds()),
-			OccurredAt:   failure.OccurredAt,
-		})
-	}
-
-	return snapshots
 }

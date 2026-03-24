@@ -3,6 +3,7 @@ package mysql
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"server/config"
@@ -99,32 +100,49 @@ func migrateMessageIdempotency() error {
 }
 
 func ensureDefaultAdminUser() error {
-	passwordHash, err := utils.HashPassword(defaultAdminPassword)
+	conf := config.GetConfig()
+
+	adminUsername := strings.TrimSpace(conf.AdminConfig.Username)
+	if adminUsername == "" {
+		adminUsername = defaultAdminUsername
+	}
+
+	adminPassword := conf.AdminConfig.Password
+	if strings.TrimSpace(adminPassword) == "" {
+		adminPassword = defaultAdminPassword
+	}
+
+	adminEmail := strings.TrimSpace(conf.AdminConfig.Email)
+	if adminEmail == "" {
+		adminEmail = defaultAdminEmail
+	}
+
+	passwordHash, err := utils.HashPassword(adminPassword)
 	if err != nil {
 		return err
 	}
 
 	return DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&model.User{}).
-			Where("username <> ?", defaultAdminUsername).
+			Where("username <> ?", adminUsername).
 			Update("is_admin", false).Error; err != nil {
 			return err
 		}
 
 		var adminUser model.User
-		err := tx.Where("username = ?", defaultAdminUsername).First(&adminUser).Error
+		err := tx.Where("username = ?", adminUsername).First(&adminUser).Error
 		if err == gorm.ErrRecordNotFound {
 			if err := tx.Create(&model.User{
-				Email:    defaultAdminEmail,
-				Name:     defaultAdminUsername,
-				Username: defaultAdminUsername,
+				Email:    adminEmail,
+				Name:     adminUsername,
+				Username: adminUsername,
 				Password: passwordHash,
 				IsAdmin:  true,
 			}).Error; err != nil {
 				return err
 			}
 
-			log.Printf("default admin created: username=%s", defaultAdminUsername)
+			log.Printf("configured admin created: username=%s", adminUsername)
 			return nil
 		}
 		if err != nil {
@@ -133,11 +151,11 @@ func ensureDefaultAdminUser() error {
 
 		updates := map[string]interface{}{
 			"is_admin": true,
-			"name":     defaultAdminUsername,
+			"name":     adminUsername,
 			"password": passwordHash,
 		}
-		if adminUser.Email == "" {
-			updates["email"] = defaultAdminEmail
+		if adminUser.Email == "" || adminUser.Email != adminEmail {
+			updates["email"] = adminEmail
 		}
 
 		if err := tx.Model(&model.User{}).
@@ -146,7 +164,7 @@ func ensureDefaultAdminUser() error {
 			return err
 		}
 
-		log.Printf("default admin ensured: username=%s", defaultAdminUsername)
+		log.Printf("configured admin ensured: username=%s", adminUsername)
 		return nil
 	})
 }

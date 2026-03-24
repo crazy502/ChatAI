@@ -40,6 +40,12 @@ type JwtConfig struct {
 	Key            string `toml:"key"`
 }
 
+type AdminConfig struct {
+	Username string `toml:"username"`
+	Password string `toml:"password"`
+	Email    string `toml:"email"`
+}
+
 type Rabbitmq struct {
 	RabbitmqPort     int    `toml:"port"`
 	RabbitmqHost     string `toml:"host"`
@@ -65,6 +71,7 @@ type Config struct {
 	RedisConfig    `toml:"redisConfig"`
 	MysqlConfig    `toml:"mysqlConfig"`
 	JwtConfig      `toml:"jwtConfig"`
+	AdminConfig    AdminConfig `toml:"adminConfig"`
 	MainConfig     `toml:"mainConfig"`
 	Rabbitmq       `toml:"rabbitmqConfig"`
 	QwenConfig     `toml:"qwenConfig"`

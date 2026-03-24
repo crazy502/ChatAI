@@ -27,6 +27,11 @@ charset =  "utf8mb4"
  subject= "GopherAI"
  key= "GopherAI-v1"
 
+[adminConfig]
+username = "admin"
+password = "admin"
+email = "admin@gopherai.local"
+
  [rabbitmqConfig]
   host= "127.0.0.1"
   port= 5672

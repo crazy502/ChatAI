@@ -5,12 +5,11 @@ import (
 	"strings"
 
 	"server/common/code"
-	"server/common/mysql"
+	"server/config"
 	"server/controller"
 	"server/utils/myjwt"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // 璇诲彇jwt
@@ -46,33 +45,16 @@ func Auth() gin.HandlerFunc {
 func RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		res := new(controller.Response)
-		userID, exists := c.Get("userID")
-		if !exists {
+		adminUsername := strings.TrimSpace(config.GetConfig().AdminConfig.Username)
+		if adminUsername == "" {
+			adminUsername = "admin"
+		}
+
+		if !c.GetBool("isAdmin") || c.GetString("userName") != adminUsername {
 			c.JSON(http.StatusOK, res.CodeOf(code.CodeForbidden))
 			c.Abort()
 			return
 		}
-
-		userIDValue, ok := userID.(int64)
-		if !ok {
-			c.JSON(http.StatusOK, res.CodeOf(code.CodeForbidden))
-			c.Abort()
-			return
-		}
-
-		currentUser, err := mysql.GetUserByID(userIDValue)
-		if err == gorm.ErrRecordNotFound || currentUser == nil || !currentUser.IsAdmin {
-			c.JSON(http.StatusOK, res.CodeOf(code.CodeForbidden))
-			c.Abort()
-			return
-		}
-		if err != nil {
-			c.JSON(http.StatusOK, res.CodeOf(code.CodeServerBusy))
-			c.Abort()
-			return
-		}
-
-		c.Set("isAdmin", true)
 		c.Next()
 	}
 }

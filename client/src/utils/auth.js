@@ -26,8 +26,7 @@ export const parseTokenPayload = (token) => {
 
 export const isAdminToken = (token) => {
   const payload = parseTokenPayload(token)
-  const userName = payload?.username || ''
-  return userName === 'admin' && Boolean(payload?.is_admin ?? payload?.isAdmin)
+  return Boolean(payload?.is_admin ?? payload?.isAdmin)
 }
 
 export const getTokenUserName = (token) => {
