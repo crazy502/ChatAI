@@ -16,13 +16,13 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login,
-    meta: { title: 'GopherAI | 登录' }
+    meta: { title: 'AgentGo | 登录' }
   },
   {
     path: '/register',
     name: 'Register',
     component: Register,
-    meta: { title: 'GopherAI | 注册' }
+    meta: { title: 'AgentGo | 注册' }
   },
   {
     path: '/menu',
@@ -30,7 +30,7 @@ const routes = [
     component: Menu,
     meta: {
       requiresAuth: true,
-      title: 'GopherAI | 控制台'
+      title: 'AgentGo | 控制台'
     }
   },
   {
@@ -39,7 +39,7 @@ const routes = [
     component: AIChat,
     meta: {
       requiresAuth: true,
-      title: 'GopherAI | 智能对话'
+      title: 'AgentGo | 智能对话'
     }
   },
   {
@@ -49,7 +49,7 @@ const routes = [
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
-      title: 'GopherAI | 管理监控'
+      title: 'AgentGo | 管理监控'
     }
   }
 ]
@@ -79,7 +79,7 @@ router.beforeEach((to, from, next) => {
 })
 
 router.afterEach((to) => {
-  document.title = to.meta.title || 'GopherAI'
+  document.title = to.meta.title || 'AgentGo'
 })
 
 export default router

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="menu-page">
     <div class="menu-bg">
       <div class="halo halo-a"></div>
@@ -9,7 +9,7 @@
     <header class="menu-header">
       <div>
         <p class="header-kicker">CONTROL CENTER</p>
-        <h1 class="header-title">GopherAI 控制台</h1>
+        <h1 class="header-title">AgentGo 控制台</h1>
       </div>
       <button class="logout-btn" type="button" @click="handleLogout">退出登录</button>
     </header>
@@ -111,7 +111,7 @@ export default {
     const handleLogout = async () => {
       const confirmed = await confirmAction({
         title: '断开当前连接？',
-        message: '退出后需要重新登录才能继续使用 GopherAI。',
+        message: '退出后需要重新登录才能继续使用 AgentGo。',
         confirmText: '退出登录',
         cancelText: '继续使用',
         intent: 'danger'

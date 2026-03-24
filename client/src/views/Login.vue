@@ -8,7 +8,7 @@
 
     <section class="auth-card">
       <p class="panel-kicker">SECURE ACCESS</p>
-      <h1 class="panel-title">欢迎回到 GopherAI</h1>
+      <h1 class="panel-title">欢迎回到 AgentGo</h1>
       <p class="panel-subtitle">登录后继续你的智能协作会话。</p>
 
       <form class="auth-form" @submit.prevent="handleLogin">

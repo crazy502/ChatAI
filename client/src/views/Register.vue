@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="auth-page">
     <div class="auth-bg">
       <div class="orb orb-a"></div>
@@ -8,7 +8,7 @@
 
     <section class="auth-card register-card">
       <p class="panel-kicker">NEW ACCESS REQUEST</p>
-      <h1 class="panel-title">创建你的 GopherAI 账号</h1>
+      <h1 class="panel-title">创建你的 AgentGo 账号</h1>
       <p class="panel-subtitle">完成注册后即可进入智能对话与会话工作台。</p>
 
       <form class="auth-form" @submit.prevent="handleRegister">

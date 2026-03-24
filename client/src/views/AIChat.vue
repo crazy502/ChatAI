@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="chat-shell">
     <transition name="overlay-fade">
       <div
@@ -16,7 +16,7 @@
         <div class="brand-block">
           <div class="logo-badge">AI</div>
           <div>
-            <p class="brand-title">GopherAI</p>
+            <p class="brand-title">AgentGo</p>
             <p class="brand-subtitle">{{ currentSessionLabel }}</p>
           </div>
         </div>
@@ -146,7 +146,7 @@
           </div>
 
           <div v-else-if="!currentMessages.length" class="empty-state">
-            <div class="empty-badge">GopherAI</div>
+            <div class="empty-badge">AgentGo</div>
             <h2 class="empty-title">从一个问题开始新的协作</h2>
             <p class="empty-desc">
               你可以直接提问、让 AI 总结内容，或者让它帮你梳理实现思路。

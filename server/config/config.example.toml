@@ -1,0 +1,50 @@
+[mainConfig]
+appName = "GopherAI"
+host = "0.0.0.0"
+port = 9090
+
+[emailConfig]
+authcode = "your-qq-mail-auth-code"
+email = "your-account@qq.com"
+
+[redisConfig]
+host = "127.0.0.1"
+port = 6379
+password = ""
+db = 0
+
+[mysqlConfig]
+host = "127.0.0.1"
+port = 3306
+user = "root"
+password = "your-mysql-password"
+databaseName = "GopherAI"
+charset = "utf8mb4"
+
+[jwtConfig]
+expire_duration = 8760
+issuer = "gopherai"
+subject = "GopherAI"
+key = "replace-with-a-random-jwt-secret"
+
+[adminConfig]
+username = "admin"
+password = "replace-with-a-strong-admin-password"
+email = "admin@gopherai.local"
+
+[rabbitmqConfig]
+host = "127.0.0.1"
+port = 5672
+username = "guest"
+password = "guest"
+vhost = "/"
+
+[qwenConfig]
+apiKey = "replace-with-qwen-api-key"
+baseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+modelName = "qwen-plus"
+
+[deepseekConfig]
+apiKey = "replace-with-deepseek-api-key"
+baseURL = "https://api.deepseek.com"
+modelName = "deepseek-chat"
