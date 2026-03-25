@@ -13,9 +13,6 @@
         <div class="preview-copy">
           <p class="shell-kicker">INTELLIGENT DIALOGUE WORKSPACE</p>
           <h1 class="shell-title">让想法、提问与回答在一个自然对话界面里连续发生</h1>
-          <p class="shell-subtitle">
-            这是一个偏轻量、偏陪伴感的 AI 聊天预览。消息会自动出现，回答会像真实生成一样逐字展开。
-          </p>
         </div>
 
         <AIChatPreview />
@@ -457,13 +454,7 @@ export default {
   text-shadow: 0 0 20px rgba(var(--mint-rgb), 0.14);
 }
 
-.shell-subtitle {
-  margin: 18px 0 0;
-  max-width: 38rem;
-  font-size: 18px;
-  line-height: 1.75;
-  color: var(--text-cold-2);
-}
+
 
 .auth-stage {
   perspective: 1800px;
@@ -683,10 +674,6 @@ export default {
 
   .preview-copy {
     text-align: center;
-  }
-
-  .shell-subtitle {
-    max-width: 36rem;
   }
 }
 
