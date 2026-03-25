@@ -1,33 +1,65 @@
 ﻿@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-1: #0f1614;
-  --bg-2: #16201d;
-  --panel: rgba(28, 38, 34, 0.72);
-  --panel-soft: rgba(255, 255, 255, 0.08);
-  --border: rgba(180, 214, 194, 0.16);
+  /* Background Layer */
+  --bg: #f7f8f7;
+  --bg-1: var(--bg);
+  --bg-2: var(--bg);
 
-  --text-1: #f3f7f4;
-  --text-2: rgba(243, 247, 244, 0.72);
-  --text-3: rgba(243, 247, 244, 0.42);
+  /* Panel Layer */
+  --panel: #ffffff;
+  --panel-soft: #ffffff;
+  --border: rgba(0, 0, 0, 0.06);
 
-  --accent: #8fbfa7;
-  --accent-strong: #a8d5bb;
-  --accent-soft: rgba(143, 191, 167, 0.16);
+  /* Text Layer */
+  --text-cold-1: #0f172a;
+  --text-cold-2: #475569;
+  --text-cold-3: #94a3b8;
 
-  --btn-text: #102018;
+  /* Brand Layer */
+  --accent: #10b981;
+  --accent-soft: #d1fae5;
+  --mint-1: var(--accent);
+  --mint-2: #34d399;
+  --mint-3: #6ee7b7;
+  --kicker: var(--accent);
 
-  --sci-fi-primary: var(--accent);
-  --sci-fi-secondary: var(--accent-strong);
-  --sci-fi-success: var(--accent-strong);
-  --sci-fi-warning: #e0bf7e;
-  --sci-fi-danger: #f07d7d;
+  /* Interaction Layer */
+  --focus-ring: rgba(16, 185, 129, 0.14);
+  --mint-shadow: rgba(16, 185, 129, 0.2);
+  --btn-text-dark: #052019;
+
+  /* Semantic Layer */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #38bdf8;
+
+  /* RGB Helpers */
+  --mint-rgb: 16, 185, 129;
+  --mint-2-rgb: 52, 211, 153;
+  --mint-3-rgb: 110, 231, 183;
+  --kicker-rgb: 16, 185, 129;
+  --info-rgb: 56, 189, 248;
+
+  /* Compatibility Aliases */
+  --text-1: var(--text-cold-1);
+  --text-2: var(--text-cold-2);
+  --text-3: var(--text-cold-3);
+  --accent-strong: var(--mint-2);
+  --btn-text: var(--btn-text-dark);
+
+  --sci-fi-primary: var(--mint-1);
+  --sci-fi-secondary: var(--mint-2);
+  --sci-fi-success: var(--success);
+  --sci-fi-warning: var(--warning);
+  --sci-fi-danger: var(--danger);
   --sci-fi-bg-dark: var(--bg-1);
   --sci-fi-bg-card: var(--panel);
   --sci-fi-bg-input: var(--panel-soft);
-  --sci-fi-text-primary: var(--text-1);
-  --sci-fi-text-secondary: var(--text-2);
-  --sci-fi-text-muted: var(--text-3);
+  --sci-fi-text-primary: var(--text-cold-1);
+  --sci-fi-text-secondary: var(--text-cold-2);
+  --sci-fi-text-muted: var(--text-cold-3);
   --sci-fi-border: var(--border);
   --sci-fi-radius-sm: 8px;
   --sci-fi-radius-md: 14px;
@@ -45,9 +77,9 @@ body {
   color: var(--sci-fi-text-primary);
   font-family: 'Rajdhani', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(143, 191, 167, 0.18), transparent 30%),
-    radial-gradient(circle at bottom right, rgba(168, 213, 187, 0.16), transparent 35%),
-    linear-gradient(145deg, var(--bg-1) 0%, var(--bg-2) 54%, #1a2622 100%);
+    radial-gradient(circle at top left, rgba(var(--mint-rgb), 0.08), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(var(--mint-2-rgb), 0.07), transparent 35%),
+    linear-gradient(145deg, var(--bg-1) 0%, #f2f6f4 58%, #eef4f1 100%);
 }
 
 body::before {
@@ -56,10 +88,10 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(143, 191, 167, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(143, 191, 167, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
   background-size: 48px 48px;
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
 button,
@@ -70,8 +102,8 @@ textarea {
 }
 
 ::selection {
-  background: var(--accent-soft);
-  color: var(--text-1);
+  background: var(--focus-ring);
+  color: var(--text-cold-1);
 }
 
 ::-webkit-scrollbar {
@@ -80,16 +112,16 @@ textarea {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(15, 23, 42, 0.08);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(143, 191, 167, 0.45);
+  background: rgba(var(--mint-rgb), 0.45);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(143, 191, 167, 0.62);
+  background: rgba(var(--mint-rgb), 0.62);
 }
 
 @media (prefers-reduced-motion: reduce) {

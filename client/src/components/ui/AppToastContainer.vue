@@ -69,13 +69,13 @@ const { uiState, removeToast } = useUi()
   border-radius: 14px;
   background: var(--panel);
   border: 1px solid var(--border);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
   backdrop-filter: blur(18px);
   pointer-events: auto;
 }
 
 .app-toast.type-success {
-  border-color: rgba(143, 191, 167, 0.36);
+  border-color: rgba(var(--mint-rgb), 0.36);
 }
 
 .app-toast.type-error {
@@ -172,6 +172,8 @@ const { uiState, removeToast } = useUi()
   }
 }
 </style>
+
+
 
 
 

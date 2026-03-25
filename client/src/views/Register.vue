@@ -216,7 +216,11 @@ export default {
 .auth-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(145deg, var(--bg-1), var(--bg-2));
+  background:
+    radial-gradient(circle at 18% 18%, rgba(var(--mint-rgb), 0.16), transparent 30%),
+    radial-gradient(circle at 78% 22%, rgba(var(--mint-2-rgb), 0.14), transparent 24%),
+    radial-gradient(circle at 52% 100%, rgba(var(--info-rgb), 0.08), transparent 36%),
+    linear-gradient(160deg, var(--bg-1) 0%, #eff5f2 42%, #ecf3ef 100%);
 }
 
 .orb {
@@ -231,7 +235,7 @@ export default {
   height: 380px;
   top: -120px;
   right: -120px;
-  background: rgba(168, 213, 187, 0.28);
+  background: rgba(var(--mint-rgb), 0.14);
 }
 
 .orb-b {
@@ -239,15 +243,15 @@ export default {
   height: 340px;
   left: -120px;
   bottom: -120px;
-  background: rgba(143, 191, 167, 0.24);
+  background: rgba(var(--mint-2-rgb), 0.12);
 }
 
 .grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(143, 191, 167, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(143, 191, 167, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
@@ -257,10 +261,14 @@ export default {
   width: min(100%, 520px);
   padding: 34px;
   border-radius: 24px;
-  background: var(--panel);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 249, 0.96)),
+    var(--panel);
   border: 1px solid var(--border);
-  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(18px);
+  box-shadow:
+    0 24px 64px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(26px);
 }
 
 .register-card {
@@ -272,7 +280,7 @@ export default {
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   letter-spacing: 2px;
-  color: var(--sci-fi-primary);
+  color: var(--kicker);
 }
 
 .panel-title {
@@ -280,14 +288,14 @@ export default {
   font-family: 'Orbitron', sans-serif;
   font-size: 28px;
   line-height: 1.2;
-  color: var(--sci-fi-text-primary);
+  color: var(--text-cold-1);
 }
 
 .panel-subtitle {
   margin: 14px 0 0;
   font-size: 15px;
   line-height: 1.7;
-  color: var(--sci-fi-text-secondary);
+  color: var(--text-cold-2);
 }
 
 .auth-form {
@@ -307,23 +315,23 @@ export default {
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   letter-spacing: 1px;
-  color: var(--sci-fi-text-secondary);
+  color: var(--kicker);
 }
 
 .field-input {
   width: 100%;
   padding: 14px 16px;
   border-radius: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(var(--kicker-rgb), 0.14);
   background: var(--panel-soft);
-  color: var(--sci-fi-text-primary);
+  color: var(--text-cold-1);
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .field-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-soft);
+  border-color: rgba(var(--kicker-rgb), 0.46);
+  box-shadow: 0 0 0 4px var(--focus-ring), 0 0 22px rgba(var(--mint-rgb), 0.16);
 }
 
 .captcha-row {
@@ -336,8 +344,8 @@ export default {
   padding: 0 18px;
   border: none;
   border-radius: 14px;
-  background: var(--accent-soft);
-  color: var(--sci-fi-primary);
+  background: linear-gradient(135deg, rgba(var(--mint-rgb), 0.18), rgba(var(--mint-3-rgb), 0.12));
+  color: #b9ffea;
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   letter-spacing: 1px;
@@ -359,8 +367,8 @@ export default {
   padding: 14px 18px;
   border: none;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-  color: var(--btn-text);
+  background: linear-gradient(135deg, var(--mint-1), var(--mint-2) 52%, var(--mint-3));
+  color: var(--btn-text-dark);
   font-family: 'Orbitron', sans-serif;
   font-size: 12px;
   letter-spacing: 2px;
@@ -370,7 +378,7 @@ export default {
 
 .primary-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 18px 30px rgba(143, 191, 167, 0.24);
+  box-shadow: 0 18px 30px var(--mint-shadow);
 }
 
 .primary-btn:disabled {
@@ -385,13 +393,13 @@ export default {
   justify-content: center;
   gap: 8px;
   font-size: 14px;
-  color: var(--sci-fi-text-secondary);
+  color: var(--text-cold-2);
 }
 
 .link-btn {
   border: none;
   background: transparent;
-  color: var(--sci-fi-primary);
+  color: var(--kicker);
   font-weight: 600;
   cursor: pointer;
 }
@@ -406,5 +414,7 @@ export default {
   }
 }
 </style>
+
+
 
 

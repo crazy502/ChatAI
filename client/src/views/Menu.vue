@@ -163,7 +163,7 @@ export default {
   height: 420px;
   top: -120px;
   right: -120px;
-  background: rgba(143, 191, 167, 0.28);
+  background: rgba(var(--mint-rgb), 0.28);
 }
 
 .halo-b {
@@ -171,15 +171,15 @@ export default {
   height: 360px;
   left: -120px;
   bottom: -140px;
-  background: rgba(168, 213, 187, 0.24);
+  background: rgba(var(--mint-2-rgb), 0.24);
 }
 
 .grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(143, 191, 167, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(143, 191, 167, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(var(--mint-rgb), 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--mint-rgb), 0.06) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
@@ -200,7 +200,7 @@ export default {
   border-radius: 24px;
   background: var(--panel);
   border: 1px solid var(--border);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.1);
   backdrop-filter: blur(18px);
 }
 
@@ -248,7 +248,7 @@ export default {
   border-radius: 28px;
   background: var(--panel);
   border: 1px solid var(--border);
-  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 24px 54px rgba(15, 23, 42, 0.12);
   backdrop-filter: blur(18px);
 }
 
@@ -381,5 +381,7 @@ export default {
   }
 }
 </style>
+
+
 
 

@@ -83,7 +83,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.42);
+  background: rgba(15, 23, 42, 0.18);
   backdrop-filter: blur(10px);
 }
 
@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
   border-radius: 18px;
   background: var(--panel);
   border: 1px solid var(--border);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
 }
 
 .dialog-kicker {
@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
 }
 
 .dialog-btn.primary:hover {
-  box-shadow: 0 12px 24px rgba(143, 191, 167, 0.26);
+  box-shadow: 0 12px 24px rgba(var(--mint-rgb), 0.26);
 }
 
 .dialog-fade-enter-active,
@@ -179,5 +179,7 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 </style>
+
+
 
 

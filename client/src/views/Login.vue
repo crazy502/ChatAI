@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="auth-page">
     <div class="auth-bg">
       <div class="orb orb-a"></div>
@@ -366,10 +366,10 @@ export default {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 18% 18%, rgba(143, 191, 167, 0.2), transparent 28%),
-    radial-gradient(circle at 78% 22%, rgba(168, 213, 187, 0.18), transparent 24%),
-    radial-gradient(circle at 50% 100%, rgba(143, 191, 167, 0.12), transparent 35%),
-    linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 42%, #1a2622 100%);
+    radial-gradient(circle at 18% 18%, rgba(var(--mint-rgb), 0.16), transparent 28%),
+    radial-gradient(circle at 78% 22%, rgba(var(--mint-2-rgb), 0.14), transparent 24%),
+    radial-gradient(circle at 50% 100%, rgba(var(--info-rgb), 0.08), transparent 35%),
+    linear-gradient(160deg, var(--bg-1) 0%, #eff5f2 42%, #ecf3ef 100%);
 }
 
 .orb {
@@ -384,7 +384,7 @@ export default {
   height: 320px;
   top: -110px;
   left: -90px;
-  background: rgba(143, 191, 167, 0.34);
+  background: rgba(var(--info-rgb), 0.1);
 }
 
 .orb-b {
@@ -392,7 +392,7 @@ export default {
   height: 360px;
   right: -120px;
   bottom: -120px;
-  background: rgba(168, 213, 187, 0.26);
+  background: rgba(var(--mint-2-rgb), 0.14);
 }
 
 .orb-c {
@@ -400,15 +400,15 @@ export default {
   height: 220px;
   top: 45%;
   right: 24%;
-  background: rgba(143, 191, 167, 0.16);
+  background: rgba(var(--info-rgb), 0.1);
 }
 
 .grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(143, 191, 167, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(143, 191, 167, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(circle at center, #000 48%, transparent 100%);
 }
@@ -416,7 +416,7 @@ export default {
 .scan-line {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 0%, rgba(143, 191, 167, 0.08) 48%, transparent 100%);
+  background: linear-gradient(to bottom, transparent 0%, rgba(var(--mint-rgb), 0.05) 48%, transparent 100%);
   animation: sweep 8s linear infinite;
 }
 
@@ -437,7 +437,7 @@ export default {
 }
 
 .preview-copy {
-  color: var(--text-2);
+  color: var(--text-cold-2);
 }
 
 .shell-kicker {
@@ -445,7 +445,7 @@ export default {
   font-family: 'Orbitron', sans-serif;
   font-size: 12px;
   letter-spacing: 3px;
-  color: var(--accent-strong);
+  color: var(--kicker);
 }
 
 .shell-title {
@@ -453,8 +453,8 @@ export default {
   font-family: 'Orbitron', sans-serif;
   font-size: clamp(34px, 5vw, 54px);
   line-height: 1.08;
-  color: var(--text-1);
-  text-shadow: 0 0 30px rgba(143, 191, 167, 0.2);
+  color: var(--text-cold-1);
+  text-shadow: 0 0 20px rgba(var(--mint-rgb), 0.14);
 }
 
 .shell-subtitle {
@@ -462,7 +462,7 @@ export default {
   max-width: 38rem;
   font-size: 18px;
   line-height: 1.75;
-  color: var(--text-2);
+  color: var(--text-cold-2);
 }
 
 .auth-stage {
@@ -489,13 +489,13 @@ export default {
   padding: 34px 32px 30px;
   border-radius: 28px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 249, 0.96)),
     var(--panel);
   border: 1px solid var(--border);
   box-shadow:
-    0 24px 80px rgba(3, 9, 7, 0.5),
-    inset 0 1px 0 rgba(243, 247, 244, 0.14);
-  backdrop-filter: blur(24px);
+    0 24px 64px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(26px);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   overflow: hidden;
@@ -506,8 +506,8 @@ export default {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(130deg, rgba(168, 213, 187, 0.14), transparent 28%),
-    linear-gradient(320deg, rgba(143, 191, 167, 0.12), transparent 36%);
+    linear-gradient(130deg, rgba(var(--mint-2-rgb), 0.14), transparent 28%),
+    linear-gradient(320deg, rgba(var(--mint-rgb), 0.12), transparent 36%);
   pointer-events: none;
 }
 
@@ -527,7 +527,7 @@ export default {
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   letter-spacing: 2px;
-  color: var(--accent-strong);
+  color: var(--kicker);
 }
 
 .panel-title {
@@ -535,14 +535,14 @@ export default {
   font-family: 'Orbitron', sans-serif;
   font-size: 30px;
   line-height: 1.18;
-  color: var(--text-1);
+  color: var(--text-cold-1);
 }
 
 .panel-subtitle {
   margin: 14px 0 0;
   font-size: 15px;
   line-height: 1.72;
-  color: var(--text-2);
+  color: var(--text-cold-2);
 }
 
 .auth-form {
@@ -563,27 +563,27 @@ export default {
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   letter-spacing: 1px;
-  color: var(--text-2);
+  color: var(--kicker);
 }
 
 .field-input {
   width: 100%;
   padding: 14px 16px;
   border-radius: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(var(--kicker-rgb), 0.14);
   background: var(--panel-soft);
-  color: var(--text-1);
+  color: var(--text-cold-1);
   outline: none;
   transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
 }
 
 .field-input::placeholder {
-  color: var(--text-3);
+  color: var(--text-cold-3);
 }
 
 .field-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-soft), 0 0 24px rgba(143, 191, 167, 0.2);
+  border-color: rgba(var(--kicker-rgb), 0.46);
+  box-shadow: 0 0 0 4px var(--focus-ring), 0 0 22px rgba(var(--mint-rgb), 0.16);
   transform: translateY(-1px);
 }
 
@@ -604,13 +604,13 @@ export default {
   margin-top: auto;
   padding: 15px 18px;
   border-radius: 18px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong) 48%, #c2e3d2);
-  color: var(--btn-text);
+  background: linear-gradient(135deg, var(--mint-1), var(--mint-2) 52%, var(--mint-3));
+  color: var(--btn-text-dark);
   font-family: 'Orbitron', sans-serif;
   font-size: 12px;
   letter-spacing: 2px;
   font-weight: 700;
-  box-shadow: 0 18px 34px rgba(143, 191, 167, 0.28);
+  box-shadow: 0 18px 34px var(--mint-shadow);
 }
 
 .primary-btn:hover:not(:disabled),
@@ -619,19 +619,19 @@ export default {
 }
 
 .primary-btn:hover:not(:disabled) {
-  box-shadow: 0 22px 40px rgba(143, 191, 167, 0.34);
+  box-shadow: 0 22px 40px rgba(var(--mint-rgb), 0.3);
 }
 
 .captcha-btn {
   min-width: 132px;
   padding: 0 18px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(143, 191, 167, 0.2), rgba(168, 213, 187, 0.16));
-  color: var(--accent-strong);
+  background: linear-gradient(135deg, rgba(var(--mint-rgb), 0.18), rgba(var(--mint-3-rgb), 0.12));
+  color: #b9ffea;
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   letter-spacing: 1px;
-  box-shadow: inset 0 0 0 1px var(--border);
+  box-shadow: inset 0 0 0 1px rgba(var(--kicker-rgb), 0.14);
 }
 
 .primary-btn:disabled,
@@ -642,7 +642,7 @@ export default {
 
 .error-text {
   font-size: 12px;
-  color: #fca5a5;
+  color: var(--danger);
 }
 
 .panel-footer {
@@ -652,7 +652,7 @@ export default {
   justify-content: center;
   gap: 8px;
   font-size: 14px;
-  color: var(--text-2);
+  color: var(--text-cold-2);
 }
 
 .link-btn {
@@ -716,3 +716,5 @@ export default {
   }
 }
 </style>
+
+

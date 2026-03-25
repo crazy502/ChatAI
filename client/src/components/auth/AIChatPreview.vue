@@ -206,8 +206,8 @@ onBeforeUnmount(() => {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at top right, rgba(168, 213, 187, 0.12), transparent 26%),
-    linear-gradient(140deg, rgba(143, 191, 167, 0.08), transparent 34%);
+    radial-gradient(circle at top right, rgba(var(--mint-2-rgb), 0.12), transparent 26%),
+    linear-gradient(140deg, rgba(var(--mint-rgb), 0.08), transparent 34%);
 }
 
 .preview-topbar,
@@ -222,7 +222,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   padding: 18px 22px;
   border-bottom: 1px solid var(--border);
-  background: rgba(15, 22, 20, 0.44);
+  background: rgba(247, 250, 249, 0.44);
 }
 
 .preview-lights {
@@ -245,7 +245,7 @@ onBeforeUnmount(() => {
 }
 
 .preview-lights span:nth-child(3) {
-  background: rgba(168, 213, 187, 0.72);
+  background: rgba(var(--mint-2-rgb), 0.72);
 }
 
 .preview-chip {
@@ -291,14 +291,14 @@ onBeforeUnmount(() => {
   line-height: 1.8;
   color: var(--text-1);
   border: 1px solid var(--border);
-  background: rgba(15, 22, 20, 0.52);
+  background: rgba(247, 250, 249, 0.52);
   box-shadow: inset 0 1px 0 rgba(243, 247, 244, 0.06);
 }
 
 .message-row.user .message-bubble {
   background:
-    linear-gradient(135deg, rgba(143, 191, 167, 0.2), rgba(168, 213, 187, 0.08)),
-    rgba(15, 22, 20, 0.56);
+    linear-gradient(135deg, rgba(var(--mint-rgb), 0.2), rgba(var(--mint-2-rgb), 0.08)),
+    rgba(247, 250, 249, 0.56);
   color: var(--text-1);
 }
 
@@ -321,7 +321,7 @@ onBeforeUnmount(() => {
   vertical-align: -0.16em;
   border-radius: 999px;
   background: var(--accent-strong);
-  box-shadow: 0 0 12px rgba(168, 213, 187, 0.42);
+  box-shadow: 0 0 12px rgba(var(--mint-2-rgb), 0.42);
   animation: blink 1s infinite;
 }
 
@@ -361,5 +361,7 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+
+
 
 

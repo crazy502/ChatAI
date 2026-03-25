@@ -604,11 +604,11 @@ onBeforeUnmount(() => {
 <style scoped>
 .admin-shell {
   --admin-bg: var(--bg-1);
-  --admin-grid: rgba(143, 191, 167, 0.06);
+  --admin-grid: rgba(var(--mint-rgb), 0.06);
   --admin-card-primary: var(--panel);
-  --admin-card-secondary: rgba(28, 38, 34, 0.66);
+  --admin-card-secondary: rgba(255, 255, 255, 0.66);
   --admin-border: var(--border);
-  --admin-shadow: rgba(0, 0, 0, 0.28);
+  --admin-shadow: rgba(15, 23, 42, 0.11);
   --admin-primary: var(--accent);
   --admin-primary-dark: var(--accent-strong);
   --admin-primary-soft: var(--accent-soft);
@@ -630,8 +630,8 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top right, rgba(143, 191, 167, 0.16), transparent 24%),
-    radial-gradient(circle at bottom left, rgba(168, 213, 187, 0.08), transparent 20%),
+    radial-gradient(circle at top right, rgba(var(--mint-rgb), 0.16), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(var(--mint-2-rgb), 0.08), transparent 20%),
     linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
 }
 
@@ -647,7 +647,7 @@ onBeforeUnmount(() => {
   height: 380px;
   top: -120px;
   right: -90px;
-  background: rgba(143, 191, 167, 0.2);
+  background: rgba(var(--mint-rgb), 0.2);
 }
 
 .glow-b {
@@ -655,7 +655,7 @@ onBeforeUnmount(() => {
   height: 320px;
   left: -100px;
   bottom: -120px;
-  background: rgba(168, 213, 187, 0.08);
+  background: rgba(var(--mint-2-rgb), 0.08);
 }
 
 .grid {
@@ -684,7 +684,7 @@ onBeforeUnmount(() => {
   margin: 0 auto 24px;
   padding: 22px 24px;
   border-radius: 24px;
-  background: rgba(28, 38, 34, 0.92);
+  background: rgba(255, 255, 255, 0.92);
   display: grid;
   grid-template-columns: minmax(280px, 1.08fr) minmax(300px, 0.92fr) minmax(320px, 1fr);
   gap: 18px;
@@ -703,11 +703,11 @@ onBeforeUnmount(() => {
   place-items: center;
   border-radius: 16px;
   background: linear-gradient(135deg, var(--admin-primary), var(--accent-strong));
-  color: #fff;
+  color: var(--btn-text-dark);
   font-family: var(--wa-font-label);
   font-size: 14px;
   letter-spacing: 2px;
-  box-shadow: 0 14px 26px rgba(143, 191, 167, 0.24);
+  box-shadow: 0 14px 26px rgba(var(--mint-rgb), 0.24);
 }
 
 .brand-kicker,
@@ -778,7 +778,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 6px;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(229, 239, 234, 0.9);
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .status-item:last-child {
@@ -844,20 +844,20 @@ onBeforeUnmount(() => {
 
 .header-btn.weak {
   color: var(--admin-text-soft);
-  background: rgba(28, 38, 34, 0.96);
+  background: rgba(255, 255, 255, 0.96);
   border-color: var(--admin-border);
 }
 
 .header-btn.secondary {
   color: var(--admin-primary-dark);
   background: var(--admin-primary-soft);
-  border-color: rgba(143, 191, 167, 0.16);
+  border-color: rgba(var(--mint-rgb), 0.16);
 }
 
 .header-btn.primary {
-  color: #fff;
+  color: var(--btn-text-dark);
   background: linear-gradient(135deg, var(--admin-primary), var(--accent-strong));
-  box-shadow: 0 12px 22px rgba(143, 191, 167, 0.22);
+  box-shadow: 0 12px 22px rgba(var(--mint-rgb), 0.22);
 }
 
 .header-btn.danger {
@@ -946,7 +946,7 @@ onBeforeUnmount(() => {
   margin-top: 22px;
   padding: 18px 20px;
   border-radius: 18px;
-  background: rgba(15, 22, 20, 0.76);
+  background: rgba(247, 250, 249, 0.76);
   border: 1px solid var(--admin-border);
 }
 
@@ -987,7 +987,7 @@ onBeforeUnmount(() => {
 .hero-stat {
   padding: 14px 14px 12px;
   border-radius: 16px;
-  background: rgba(28, 38, 34, 0.82);
+  background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--admin-border);
 }
 
@@ -1038,7 +1038,7 @@ onBeforeUnmount(() => {
 
 .health-pill.neutral,
 .severity-badge.neutral {
-  background: rgba(168, 213, 187, 0.12);
+  background: rgba(var(--mint-2-rgb), 0.12);
   color: var(--admin-info);
 }
 
@@ -1054,22 +1054,22 @@ onBeforeUnmount(() => {
 
 .hero-status-strip.success {
   background: rgba(34, 197, 94, 0.1);
-  color: #17803f;
+  color: var(--admin-success);
 }
 
 .hero-status-strip.warning {
   background: rgba(245, 158, 11, 0.1);
-  color: #b45309;
+  color: var(--admin-warning);
 }
 
 .hero-status-strip.danger {
   background: rgba(239, 68, 68, 0.1);
-  color: #b91c1c;
+  color: var(--admin-danger);
 }
 
 .hero-status-strip.neutral {
-  background: rgba(168, 213, 187, 0.08);
-  color: #2563eb;
+  background: rgba(var(--mint-2-rgb), 0.08);
+  color: var(--admin-info);
 }
 
 .strip-dot {
@@ -1101,19 +1101,19 @@ onBeforeUnmount(() => {
 }
 
 .metric-card.info {
-  background: linear-gradient(180deg, rgba(28, 38, 34, 0.78) 0%, rgba(15, 22, 20, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(247, 250, 249, 0.9) 100%);
 }
 
 .metric-card.success {
-  background: linear-gradient(180deg, rgba(28, 38, 34, 0.78) 0%, rgba(22, 32, 29, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(22, 32, 29, 0.92) 100%);
 }
 
 .metric-card.warning {
-  background: linear-gradient(180deg, rgba(28, 38, 34, 0.78) 0%, rgba(36, 34, 26, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(36, 34, 26, 0.9) 100%);
 }
 
 .metric-card.danger {
-  background: linear-gradient(180deg, rgba(28, 38, 34, 0.78) 0%, rgba(36, 27, 27, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(36, 27, 27, 0.9) 100%);
 }
 
 .metric-label {
@@ -1157,7 +1157,7 @@ onBeforeUnmount(() => {
   margin-top: 22px;
   padding: 14px 10px 8px;
   border-radius: 18px;
-  background: rgba(28, 38, 34, 0.96);
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid var(--admin-border);
 }
 
@@ -1220,7 +1220,7 @@ onBeforeUnmount(() => {
   margin-top: 18px;
   padding: 18px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--admin-card-secondary);
   font-size: 14px;
   line-height: 1.7;
   border: 1px dashed var(--admin-border);
@@ -1240,7 +1240,7 @@ onBeforeUnmount(() => {
 .metrics-table th,
 .metrics-table td {
   padding: 14px 12px;
-  border-bottom: 1px solid rgba(229, 239, 234, 0.9);
+  border-bottom: 1px solid var(--admin-border);
   text-align: left;
   font-size: 14px;
   color: var(--admin-text);
@@ -1284,12 +1284,12 @@ onBeforeUnmount(() => {
 }
 
 .method-chip.post {
-  background: rgba(168, 213, 187, 0.12);
+  background: rgba(var(--mint-2-rgb), 0.12);
   color: var(--admin-info);
 }
 
 .method-chip.default {
-  background: rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.14);
   color: var(--admin-text-soft);
 }
 
@@ -1354,4 +1354,6 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+
+
 
