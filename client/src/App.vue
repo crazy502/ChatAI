@@ -67,7 +67,7 @@ body {
   font-family: 'Rajdhani', 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f5fbf5;
+  background: var(--bg-1);
 }
 
 #app {
@@ -81,9 +81,9 @@ body {
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(circle at top right, rgba(45, 212, 191, 0.2), transparent 30%),
-    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.18), transparent 25%),
-    linear-gradient(135deg, #f5fbf5 0%, #eef8f0 45%, #f8fcf8 100%);
+    radial-gradient(circle at top right, rgba(168, 213, 187, 0.18), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(143, 191, 167, 0.16), transparent 26%),
+    linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 54%, #1b2823 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -106,7 +106,7 @@ body {
 .spinner-ring {
   position: absolute;
   border: 3px solid transparent;
-  border-top-color: #10b981;
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spinner-rotate 1.2s linear infinite;
 }
@@ -116,7 +116,7 @@ body {
   height: 100px;
   top: 0;
   left: 0;
-  border-top-color: #10b981;
+  border-top-color: var(--accent);
 }
 
 .spinner-ring:nth-child(2) {
@@ -126,7 +126,7 @@ body {
   left: 12.5px;
   animation-direction: reverse;
   animation-duration: 0.9s;
-  border-top-color: #2dd4bf;
+  border-top-color: var(--accent-strong);
 }
 
 .spinner-ring:nth-child(3) {
@@ -135,7 +135,7 @@ body {
   top: 25px;
   left: 25px;
   animation-duration: 0.6s;
-  border-top-color: #84cc16;
+  border-top-color: rgba(214, 235, 224, 0.92);
 }
 
 @keyframes spinner-rotate {
@@ -154,7 +154,7 @@ body {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 6px;
-  color: #10b981;
+  color: var(--accent);
   animation: loading-text-pulse 1.5s ease-in-out infinite;
 }
 
@@ -162,12 +162,12 @@ body {
   0%,
   100% {
     opacity: 0.4;
-    text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+    text-shadow: 0 0 10px rgba(143, 191, 167, 0.24);
   }
 
   50% {
     opacity: 1;
-    text-shadow: 0 0 20px rgba(16, 185, 129, 0.45);
+    text-shadow: 0 0 20px rgba(143, 191, 167, 0.45);
   }
 }
 
@@ -196,7 +196,7 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #10b981, transparent);
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
   animation: scan-line 0.45s ease-out;
   pointer-events: none;
   z-index: 9998;
@@ -228,4 +228,5 @@ body {
   }
 }
 </style>
+
 

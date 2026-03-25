@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <teleport to="body">
     <transition name="dialog-fade">
       <div v-if="uiState.inputDialog.visible" class="dialog-overlay" @click.self="cancelInput()">
@@ -83,7 +83,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.38);
+  background: rgba(0, 0, 0, 0.42);
   backdrop-filter: blur(10px);
 }
 
@@ -91,9 +91,9 @@ onBeforeUnmount(() => {
   width: min(100%, 420px);
   padding: 28px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
 }
 
 .dialog-kicker {
@@ -117,8 +117,8 @@ onBeforeUnmount(() => {
   margin-top: 16px;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
   font-size: 14px;
   color: var(--sci-fi-text-primary);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -128,7 +128,7 @@ onBeforeUnmount(() => {
 .dialog-input:focus {
   outline: none;
   border-color: var(--sci-fi-primary);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .dialog-actions {
@@ -142,7 +142,7 @@ onBeforeUnmount(() => {
   min-width: 96px;
   padding: 10px 16px;
   border-radius: 10px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid var(--border);
   font-family: 'Orbitron', sans-serif;
   font-size: 12px;
   letter-spacing: 1px;
@@ -155,18 +155,18 @@ onBeforeUnmount(() => {
 }
 
 .dialog-btn.secondary {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--panel-soft);
   color: var(--sci-fi-text-secondary);
 }
 
 .dialog-btn.primary {
-  color: #fff;
-  background: linear-gradient(135deg, var(--sci-fi-primary), var(--sci-fi-secondary));
+  color: var(--btn-text);
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   border-color: transparent;
 }
 
 .dialog-btn.primary:hover {
-  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 12px 24px rgba(143, 191, 167, 0.26);
 }
 
 .dialog-fade-enter-active,
@@ -179,4 +179,5 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 </style>
+
 

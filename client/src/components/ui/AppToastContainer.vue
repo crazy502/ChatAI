@@ -67,15 +67,15 @@ const { uiState, removeToast } = useUi()
   gap: 12px;
   padding: 14px 16px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(18px);
   pointer-events: auto;
 }
 
 .app-toast.type-success {
-  border-color: rgba(16, 185, 129, 0.35);
+  border-color: rgba(143, 191, 167, 0.36);
 }
 
 .app-toast.type-error {
@@ -96,7 +96,7 @@ const { uiState, removeToast } = useUi()
   font-family: 'Orbitron', sans-serif;
   font-size: 16px;
   font-weight: 700;
-  background: rgba(16, 185, 129, 0.12);
+  background: var(--accent-soft);
   color: var(--sci-fi-primary);
 }
 
@@ -172,5 +172,6 @@ const { uiState, removeToast } = useUi()
   }
 }
 </style>
+
 
 

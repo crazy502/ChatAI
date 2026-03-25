@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="menu-page">
     <div class="menu-bg">
       <div class="halo halo-a"></div>
@@ -148,7 +148,7 @@ export default {
 .menu-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.72), rgba(236, 247, 240, 0.96));
+  background: linear-gradient(150deg, var(--bg-1), var(--bg-2));
 }
 
 .halo {
@@ -163,7 +163,7 @@ export default {
   height: 420px;
   top: -120px;
   right: -120px;
-  background: rgba(16, 185, 129, 0.32);
+  background: rgba(143, 191, 167, 0.28);
 }
 
 .halo-b {
@@ -171,15 +171,15 @@ export default {
   height: 360px;
   left: -120px;
   bottom: -140px;
-  background: rgba(45, 212, 191, 0.28);
+  background: rgba(168, 213, 187, 0.24);
 }
 
 .grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(16, 185, 129, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 185, 129, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(143, 191, 167, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 191, 167, 0.06) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
@@ -198,9 +198,9 @@ export default {
   max-width: 1160px;
   padding: 20px 24px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(16, 185, 129, 0.14);
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.26);
   backdrop-filter: blur(18px);
 }
 
@@ -229,7 +229,7 @@ export default {
   padding: 12px 18px;
   border: none;
   border-radius: 14px;
-  background: rgba(239, 68, 68, 0.12);
+  background: rgba(240, 125, 125, 0.16);
   color: var(--sci-fi-danger);
   font-size: 12px;
   letter-spacing: 1px;
@@ -246,9 +246,9 @@ export default {
 .hero-card,
 .stat-card {
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(16, 185, 129, 0.14);
-  box-shadow: 0 24px 54px rgba(15, 23, 42, 0.1);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(18px);
 }
 
@@ -291,7 +291,7 @@ export default {
   border: none;
   border-radius: 16px;
   background: linear-gradient(135deg, var(--sci-fi-primary), var(--sci-fi-secondary));
-  color: #fff;
+  color: var(--btn-text);
   font-size: 12px;
   letter-spacing: 2px;
   cursor: pointer;
@@ -299,9 +299,9 @@ export default {
 
 .secondary-btn {
   padding: 14px 20px;
-  border: 1px solid rgba(16, 185, 129, 0.18);
+  border: 1px solid var(--border);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--panel-soft);
   color: var(--sci-fi-text-primary);
   font-family: 'Orbitron', sans-serif;
   font-size: 12px;
@@ -381,4 +381,5 @@ export default {
   }
 }
 </style>
+
 

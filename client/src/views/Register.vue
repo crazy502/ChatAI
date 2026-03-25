@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="auth-page">
     <div class="auth-bg">
       <div class="orb orb-a"></div>
@@ -216,7 +216,7 @@ export default {
 .auth-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(236, 247, 240, 0.92));
+  background: linear-gradient(145deg, var(--bg-1), var(--bg-2));
 }
 
 .orb {
@@ -231,7 +231,7 @@ export default {
   height: 380px;
   top: -120px;
   right: -120px;
-  background: rgba(45, 212, 191, 0.35);
+  background: rgba(168, 213, 187, 0.28);
 }
 
 .orb-b {
@@ -239,15 +239,15 @@ export default {
   height: 340px;
   left: -120px;
   bottom: -120px;
-  background: rgba(16, 185, 129, 0.28);
+  background: rgba(143, 191, 167, 0.24);
 }
 
 .grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(143, 191, 167, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(143, 191, 167, 0.06) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 
@@ -257,9 +257,9 @@ export default {
   width: min(100%, 520px);
   padding: 34px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(16, 185, 129, 0.16);
-  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.12);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.34);
   backdrop-filter: blur(18px);
 }
 
@@ -314,16 +314,16 @@ export default {
   width: 100%;
   padding: 14px 16px;
   border-radius: 14px;
-  border: 1px solid rgba(16, 185, 129, 0.18);
-  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
   color: var(--sci-fi-text-primary);
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .field-input:focus {
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.08);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
 .captcha-row {
@@ -336,7 +336,7 @@ export default {
   padding: 0 18px;
   border: none;
   border-radius: 14px;
-  background: rgba(16, 185, 129, 0.12);
+  background: var(--accent-soft);
   color: var(--sci-fi-primary);
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
@@ -359,8 +359,8 @@ export default {
   padding: 14px 18px;
   border: none;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--sci-fi-primary), var(--sci-fi-secondary));
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--btn-text);
   font-family: 'Orbitron', sans-serif;
   font-size: 12px;
   letter-spacing: 2px;
@@ -370,7 +370,7 @@ export default {
 
 .primary-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 18px 30px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 18px 30px rgba(143, 191, 167, 0.24);
 }
 
 .primary-btn:disabled {
@@ -406,4 +406,5 @@ export default {
   }
 }
 </style>
+
 

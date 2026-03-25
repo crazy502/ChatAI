@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="admin-shell">
     <div class="admin-bg" aria-hidden="true">
       <div class="glow glow-a"></div>
@@ -603,22 +603,22 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .admin-shell {
-  --admin-bg: #f4f8f6;
-  --admin-grid: rgba(80, 120, 100, 0.06);
-  --admin-card-primary: #ffffff;
-  --admin-card-secondary: #fcfdfc;
-  --admin-border: #e5efea;
-  --admin-shadow: rgba(15, 23, 42, 0.08);
-  --admin-primary: #2ec5a7;
-  --admin-primary-dark: #20a88d;
-  --admin-primary-soft: #eafbf4;
+  --admin-bg: var(--bg-1);
+  --admin-grid: rgba(143, 191, 167, 0.06);
+  --admin-card-primary: var(--panel);
+  --admin-card-secondary: rgba(28, 38, 34, 0.66);
+  --admin-border: var(--border);
+  --admin-shadow: rgba(0, 0, 0, 0.28);
+  --admin-primary: var(--accent);
+  --admin-primary-dark: var(--accent-strong);
+  --admin-primary-soft: var(--accent-soft);
   --admin-success: #22c55e;
   --admin-warning: #f59e0b;
   --admin-danger: #ef4444;
   --admin-info: #3b82f6;
-  --admin-text: #18312b;
-  --admin-text-soft: #5d746d;
-  --admin-text-muted: #7d948e;
+  --admin-text: var(--text-1);
+  --admin-text-soft: var(--text-2);
+  --admin-text-muted: var(--text-3);
   min-height: 100vh;
   position: relative;
   overflow: hidden;
@@ -630,9 +630,9 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top right, rgba(46, 197, 167, 0.12), transparent 24%),
-    radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.06), transparent 20%),
-    linear-gradient(180deg, #f4f8f6 0%, #f1f7f3 100%);
+    radial-gradient(circle at top right, rgba(143, 191, 167, 0.16), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(168, 213, 187, 0.08), transparent 20%),
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
 }
 
 .glow {
@@ -647,7 +647,7 @@ onBeforeUnmount(() => {
   height: 380px;
   top: -120px;
   right: -90px;
-  background: rgba(46, 197, 167, 0.18);
+  background: rgba(143, 191, 167, 0.2);
 }
 
 .glow-b {
@@ -655,7 +655,7 @@ onBeforeUnmount(() => {
   height: 320px;
   left: -100px;
   bottom: -120px;
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(168, 213, 187, 0.08);
 }
 
 .grid {
@@ -684,7 +684,7 @@ onBeforeUnmount(() => {
   margin: 0 auto 24px;
   padding: 22px 24px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(28, 38, 34, 0.92);
   display: grid;
   grid-template-columns: minmax(280px, 1.08fr) minmax(300px, 0.92fr) minmax(320px, 1fr);
   gap: 18px;
@@ -702,12 +702,12 @@ onBeforeUnmount(() => {
   display: grid;
   place-items: center;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--admin-primary), #8ee3d3);
+  background: linear-gradient(135deg, var(--admin-primary), var(--accent-strong));
   color: #fff;
   font-family: var(--wa-font-label);
   font-size: 14px;
   letter-spacing: 2px;
-  box-shadow: 0 14px 26px rgba(46, 197, 167, 0.24);
+  box-shadow: 0 14px 26px rgba(143, 191, 167, 0.24);
 }
 
 .brand-kicker,
@@ -844,20 +844,20 @@ onBeforeUnmount(() => {
 
 .header-btn.weak {
   color: var(--admin-text-soft);
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(28, 38, 34, 0.96);
   border-color: var(--admin-border);
 }
 
 .header-btn.secondary {
   color: var(--admin-primary-dark);
   background: var(--admin-primary-soft);
-  border-color: rgba(46, 197, 167, 0.16);
+  border-color: rgba(143, 191, 167, 0.16);
 }
 
 .header-btn.primary {
   color: #fff;
-  background: linear-gradient(135deg, var(--admin-primary), #69d9c2);
-  box-shadow: 0 12px 22px rgba(46, 197, 167, 0.22);
+  background: linear-gradient(135deg, var(--admin-primary), var(--accent-strong));
+  box-shadow: 0 12px 22px rgba(143, 191, 167, 0.22);
 }
 
 .header-btn.danger {
@@ -883,7 +883,7 @@ onBeforeUnmount(() => {
   gap: 8px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: #fff;
+  background: var(--panel);
   border: 1px solid var(--admin-border);
   color: var(--admin-text-soft);
   font-size: 11px;
@@ -894,7 +894,7 @@ onBeforeUnmount(() => {
   min-width: 148px;
   cursor: pointer;
   color: var(--admin-text);
-  background: #fff;
+  background: var(--panel);
   border-color: var(--admin-border);
 }
 
@@ -946,7 +946,7 @@ onBeforeUnmount(() => {
   margin-top: 22px;
   padding: 18px 20px;
   border-radius: 18px;
-  background: rgba(244, 248, 246, 0.92);
+  background: rgba(15, 22, 20, 0.76);
   border: 1px solid var(--admin-border);
 }
 
@@ -987,7 +987,7 @@ onBeforeUnmount(() => {
 .hero-stat {
   padding: 14px 14px 12px;
   border-radius: 16px;
-  background: rgba(252, 253, 252, 0.98);
+  background: rgba(28, 38, 34, 0.82);
   border: 1px solid var(--admin-border);
 }
 
@@ -1038,7 +1038,7 @@ onBeforeUnmount(() => {
 
 .health-pill.neutral,
 .severity-badge.neutral {
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(168, 213, 187, 0.12);
   color: var(--admin-info);
 }
 
@@ -1068,7 +1068,7 @@ onBeforeUnmount(() => {
 }
 
 .hero-status-strip.neutral {
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(168, 213, 187, 0.08);
   color: #2563eb;
 }
 
@@ -1101,19 +1101,19 @@ onBeforeUnmount(() => {
 }
 
 .metric-card.info {
-  background: linear-gradient(180deg, #fcfdfc 0%, #f5fbf8 100%);
+  background: linear-gradient(180deg, rgba(28, 38, 34, 0.78) 0%, rgba(15, 22, 20, 0.9) 100%);
 }
 
 .metric-card.success {
-  background: linear-gradient(180deg, #fcfdfc 0%, #f3fcf5 100%);
+  background: linear-gradient(180deg, rgba(28, 38, 34, 0.78) 0%, rgba(22, 32, 29, 0.92) 100%);
 }
 
 .metric-card.warning {
-  background: linear-gradient(180deg, #fcfdfc 0%, #fff9f0 100%);
+  background: linear-gradient(180deg, rgba(28, 38, 34, 0.78) 0%, rgba(36, 34, 26, 0.9) 100%);
 }
 
 .metric-card.danger {
-  background: linear-gradient(180deg, #fcfdfc 0%, #fff5f5 100%);
+  background: linear-gradient(180deg, rgba(28, 38, 34, 0.78) 0%, rgba(36, 27, 27, 0.9) 100%);
 }
 
 .metric-label {
@@ -1157,7 +1157,7 @@ onBeforeUnmount(() => {
   margin-top: 22px;
   padding: 14px 10px 8px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(28, 38, 34, 0.96);
   border: 1px solid var(--admin-border);
 }
 
@@ -1284,7 +1284,7 @@ onBeforeUnmount(() => {
 }
 
 .method-chip.post {
-  background: rgba(59, 130, 246, 0.12);
+  background: rgba(168, 213, 187, 0.12);
   color: var(--admin-info);
 }
 
@@ -1354,3 +1354,4 @@ onBeforeUnmount(() => {
   }
 }
 </style>
+

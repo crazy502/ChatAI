@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { isAdminToken } from '../utils/auth'
 
 const Login = () => import(/* webpackChunkName: "auth" */ '../views/Login.vue')
-const Register = () => import(/* webpackChunkName: "auth" */ '../views/Register.vue')
 const Menu = () => import(/* webpackChunkName: "menu" */ '../views/Menu.vue')
 const AIChat = () => import(/* webpackChunkName: "chat" */ '../views/AIChat.vue')
 const AdminMetrics = () => import(/* webpackChunkName: "admin" */ '../views/AdminMetrics.vue')
@@ -20,9 +19,7 @@ const routes = [
   },
   {
     path: '/register',
-    name: 'Register',
-    component: Register,
-    meta: { title: 'AgentGo | 注册' }
+    redirect: '/login'
   },
   {
     path: '/menu',
