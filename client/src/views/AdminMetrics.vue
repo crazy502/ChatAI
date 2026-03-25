@@ -10,9 +10,9 @@
       <div class="header-brand">
         <div class="brand-badge">OPS</div>
         <div>
-          <p class="brand-kicker">LIGHTWEIGHT MONITORING</p>
-          <h1 class="brand-title">AgentGo 管理概览</h1>
-          <p class="brand-subtitle">只保留请求、错误、延迟、接口健康和模型健康这几项必要信息。</p>
+          <p class="brand-kicker">SYSTEM MONITORING</p>
+          <h1 class="brand-title">AgentGo 监控面板</h1>
+          <p class="brand-subtitle">集中展示请求量、错误率、平均延迟、接口状态和模型状态。</p>
         </div>
       </div>
 
@@ -62,12 +62,12 @@
         <div class="hero-main">
           <div class="hero-copy">
             <p class="section-kicker">SYSTEM SNAPSHOT</p>
-            <h2 class="hero-title">先判断系统状态，再决定是否继续下钻排查</h2>
+            <h2 class="hero-title">系统状态概览</h2>
             <p class="hero-desc">
-              这个区域只承担一件事：给出当前最值得相信的整体判断，避免一上来就淹没在细节里。
+              聚合错误率、平均延迟和异常数量，用于快速判断当前系统是否正常运行。
             </p>
             <div class="diagnosis-box">
-              <span class="diagnosis-label">当前结论</span>
+              <span class="diagnosis-label">当前状态</span>
               <strong class="diagnosis-title">{{ snapshotTitle }}</strong>
               <p class="diagnosis-text">{{ snapshotSummary }}</p>
             </div>
@@ -77,19 +77,19 @@
             <div class="health-pill" :class="healthStatus.tone">{{ healthStatus.label }}</div>
             <div class="hero-stats">
               <article class="hero-stat">
-                <span class="hero-stat-label">最近刷新</span>
+                <span class="hero-stat-label">最近更新时间</span>
                 <strong class="hero-stat-value">{{ lastUpdatedLabel }}</strong>
               </article>
               <article class="hero-stat">
-                <span class="hero-stat-label">异常接口数</span>
+                <span class="hero-stat-label">异常接口</span>
                 <strong class="hero-stat-value">{{ abnormalRouteCount }}</strong>
               </article>
               <article class="hero-stat">
-                <span class="hero-stat-label">异常模型数</span>
+                <span class="hero-stat-label">异常模型</span>
                 <strong class="hero-stat-value">{{ abnormalModelCount }}</strong>
               </article>
               <article class="hero-stat">
-                <span class="hero-stat-label">刷新策略</span>
+                <span class="hero-stat-label">刷新方式</span>
                 <strong class="hero-stat-value">{{ autoRefresh ? refreshIntervalLabel : '手动刷新' }}</strong>
               </article>
             </div>
@@ -117,7 +117,7 @@
               <p class="section-kicker">REQUEST TREND</p>
               <h3 class="panel-title">请求增量趋势</h3>
             </div>
-            <span class="panel-note">绿色折线 / 低透明度面积</span>
+            <span class="panel-note">展示最近采样周期内的请求变化</span>
           </div>
 
           <div v-if="requestTrendPoints.length" class="chart-shell">
@@ -130,7 +130,7 @@
               <circle v-for="point in requestTrendPoints" :key="point.key" class="chart-point request-point" :cx="point.x" :cy="point.y" r="3.5"></circle>
             </svg>
           </div>
-          <div v-else class="panel-empty">等待更多采样数据后显示趋势。</div>
+          <div v-else class="panel-empty">暂无足够数据，暂时无法生成趋势图。</div>
 
           <div class="trend-summary">
             <span>当前增量 {{ formatNumber(latestRequestDelta) }}</span>
@@ -145,7 +145,7 @@
               <p class="section-kicker">LATENCY TREND</p>
               <h3 class="panel-title">平均延迟趋势</h3>
             </div>
-            <span class="panel-note">橙色折线 / 低透明度面积</span>
+            <span class="panel-note">展示最近采样周期内的平均延迟变化</span>
           </div>
 
           <div v-if="latencyTrendPoints.length" class="chart-shell">
@@ -158,7 +158,7 @@
               <circle v-for="point in latencyTrendPoints" :key="point.key" class="chart-point latency-point" :cx="point.x" :cy="point.y" r="3.5"></circle>
             </svg>
           </div>
-          <div v-else class="panel-empty">等待更多采样数据后显示趋势。</div>
+          <div v-else class="panel-empty">暂无足够数据，暂时无法生成趋势图。</div>
 
           <div class="trend-summary">
             <span>当前平均 {{ formatDuration(overview.avgLatencyMs) }}</span>
@@ -175,11 +175,11 @@
               <p class="section-kicker">ROUTES</p>
               <h3 class="panel-title">接口健康</h3>
             </div>
-            <span class="panel-note">优先展示需要关注的接口</span>
+            <span class="panel-note">按状态和请求量排序展示接口指标</span>
           </div>
 
-          <div v-if="loading && !routeRows.length" class="panel-empty">正在加载接口指标...</div>
-          <div v-else-if="!routeRows.length" class="panel-empty">当前还没有接口请求数据。</div>
+          <div v-if="loading && !routeRows.length" class="panel-empty">正在加载接口监控数据...</div>
+          <div v-else-if="!routeRows.length" class="panel-empty">暂无接口监控数据。</div>
           <div v-else class="table-shell">
             <table class="metrics-table">
               <thead>
@@ -215,11 +215,11 @@
               <p class="section-kicker">MODELS</p>
               <h3 class="panel-title">模型健康</h3>
             </div>
-            <span class="panel-note">按模型聚合展示调用表现</span>
+            <span class="panel-note">按模型维度汇总调用次数、错误率和延迟</span>
           </div>
 
-          <div v-if="loading && !modelRows.length" class="panel-empty">正在加载模型指标...</div>
-          <div v-else-if="!modelRows.length" class="panel-empty">当前还没有模型调用数据。</div>
+          <div v-if="loading && !modelRows.length" class="panel-empty">正在加载模型监控数据...</div>
+          <div v-else-if="!modelRows.length" class="panel-empty">暂无模型监控数据。</div>
           <div v-else class="table-shell">
             <table class="metrics-table">
               <thead>
@@ -349,7 +349,14 @@ const rawModelFamilies = computed(() => {
   for (const item of models.value) {
     const modelType = item.modelType || 'unknown'
     const current = familyMap.get(modelType) || {
-      modelType, requestsTotal: 0, errorsTotal: 0, weightedLatency: 0, lastLatencyMs: 0, lastSuccessAt: '', lastFailureAt: '', operations: []
+      modelType,
+      requestsTotal: 0,
+      errorsTotal: 0,
+      weightedLatency: 0,
+      lastLatencyMs: 0,
+      lastSuccessAt: '',
+      lastFailureAt: '',
+      operations: []
     }
     const requestsTotal = Number(item.requestsTotal) || 0
     current.requestsTotal += requestsTotal
@@ -387,62 +394,118 @@ const healthStatus = computed(() => {
   const avgLatencyMs = Number(overview.value.avgLatencyMs) || 0
   if (!requestsTotal) return buildSeverity('neutral', '待观察')
   if (errorRate >= 0.1 || avgLatencyMs >= 4000 || abnormalRouteCount.value >= 3) return buildSeverity('danger', '存在异常')
-  if (errorRate >= 0.03 || avgLatencyMs >= 1500 || abnormalRouteCount.value > 0 || abnormalModelCount.value > 0) return buildSeverity('warning', '轻微波动')
-  return buildSeverity('success', '运行稳定')
+  if (errorRate >= 0.03 || avgLatencyMs >= 1500 || abnormalRouteCount.value > 0 || abnormalModelCount.value > 0) {
+    return buildSeverity('warning', '存在波动')
+  }
+  return buildSeverity('success', '运行正常')
 })
 
 const snapshotTitle = computed(() => {
   const requestsTotal = Number(overview.value.requestsTotal) || 0
-  if (!requestsTotal) return '系统刚启动，正在等待采样'
-  if (healthStatus.value.tone === 'danger') return '当前存在明显异常，建议优先检查异常接口和模型'
-  if (healthStatus.value.tone === 'warning') return '当前有轻微波动，适合继续观察趋势变化'
-  return '当前整体运行稳定，可以继续观察后续变化'
+  if (!requestsTotal) return '等待监控数据'
+  if (healthStatus.value.tone === 'danger') return '系统存在异常'
+  if (healthStatus.value.tone === 'warning') return '系统存在波动'
+  return '系统运行正常'
 })
 
 const snapshotSummary = computed(() => {
   const errorRate = Number(overview.value.errorRate) || 0
   const avgLatencyMs = Number(overview.value.avgLatencyMs) || 0
+  const abnormalRoutes = abnormalRouteCount.value
+  const abnormalModels = abnormalModelCount.value
+
   if (healthStatus.value.tone === 'danger') {
-    return `当前错误率为 ${formatPercent(errorRate)}，平均延迟为 ${formatDuration(avgLatencyMs)}。如果异常项持续增加，建议立即排查上游模型或高风险接口。`
+    return `错误率 ${formatPercent(errorRate)}，平均延迟 ${formatDuration(avgLatencyMs)}，异常接口 ${abnormalRoutes} 个，异常模型 ${abnormalModels} 个。`
   }
+
   if (healthStatus.value.tone === 'warning') {
-    return `当前错误率和延迟出现一定波动，异常接口 ${abnormalRouteCount.value} 个、异常模型 ${abnormalModelCount.value} 个，建议继续观察最近几个采样周期。`
+    return `错误率 ${formatPercent(errorRate)}，平均延迟 ${formatDuration(avgLatencyMs)}，异常接口 ${abnormalRoutes} 个，异常模型 ${abnormalModels} 个。`
   }
+
   if (healthStatus.value.tone === 'neutral') {
-    return '监控刚开始采样，当前还不足以给出稳定结论，等待更多请求进入后再判断。'
+    return '当前监控数据不足，暂时无法判断系统状态。'
   }
-  return `当前错误率 ${formatPercent(errorRate)}，平均延迟 ${formatDuration(avgLatencyMs)}，系统整体处于稳定状态。`
+
+  return `错误率 ${formatPercent(errorRate)}，平均延迟 ${formatDuration(avgLatencyMs)}，当前未发现明显异常。`
 })
 
 const statusStripText = computed(() => {
-  if (healthStatus.value.tone === 'danger') return `当前存在异常，异常接口 ${abnormalRouteCount.value} 个，异常模型 ${abnormalModelCount.value} 个，建议立即排查。`
-  if (healthStatus.value.tone === 'warning') return `系统出现轻微波动，异常接口 ${abnormalRouteCount.value} 个，异常模型 ${abnormalModelCount.value} 个，建议继续观察。`
-  if (healthStatus.value.tone === 'neutral') return '监控刚开始采样，当前没有足够数据形成结论。'
-  return '系统运行稳定，当前无明显异常，建议继续保持自动刷新观察。'
+  if (healthStatus.value.tone === 'danger') {
+    return `当前存在异常：异常接口 ${abnormalRouteCount.value} 个，异常模型 ${abnormalModelCount.value} 个。`
+  }
+  if (healthStatus.value.tone === 'warning') {
+    return `当前存在波动：异常接口 ${abnormalRouteCount.value} 个，异常模型 ${abnormalModelCount.value} 个。`
+  }
+  if (healthStatus.value.tone === 'neutral') {
+    return '当前监控数据不足，正在等待更多采样。'
+  }
+  return '当前系统运行正常，未发现明显异常。'
 })
 
 const overviewCards = computed(() => [
-  { label: '累计请求', value: formatNumber(overview.value.requestsTotal), desc: '当前监控窗口内累计请求量', tone: 'info' },
-  { label: '累计错误', value: formatNumber(overview.value.errorsTotal), desc: 'HTTP 或业务异常累计次数', tone: 'danger' },
-  { label: '错误率', value: formatPercent(overview.value.errorRate), desc: '快速判断系统是否稳定', tone: Number(overview.value.errorRate) >= 0.03 ? 'warning' : 'success' },
-  { label: '平均延迟', value: formatDuration(overview.value.avgLatencyMs), desc: '请求的平均耗时', tone: Number(overview.value.avgLatencyMs) >= 1500 ? 'warning' : 'info' },
-  { label: '异常接口数', value: formatNumber(abnormalRouteCount.value), desc: '需要优先关注的接口数量', tone: abnormalRouteCount.value > 0 ? 'warning' : 'success' },
-  { label: '异常模型数', value: formatNumber(abnormalModelCount.value), desc: '需要关注的模型数量', tone: abnormalModelCount.value > 0 ? 'warning' : 'success' }
+  {
+    label: '累计请求',
+    value: formatNumber(overview.value.requestsTotal),
+    desc: '当前采样周期内的请求总量',
+    tone: 'info'
+  },
+  {
+    label: '累计错误',
+    value: formatNumber(overview.value.errorsTotal),
+    desc: '当前采样周期内的错误总量',
+    tone: 'danger'
+  },
+  {
+    label: '错误率',
+    value: formatPercent(overview.value.errorRate),
+    desc: '错误请求占总请求的比例',
+    tone: Number(overview.value.errorRate) >= 0.03 ? 'warning' : 'success'
+  },
+  {
+    label: '平均延迟',
+    value: formatDuration(overview.value.avgLatencyMs),
+    desc: '请求的平均响应时间',
+    tone: Number(overview.value.avgLatencyMs) >= 1500 ? 'warning' : 'info'
+  },
+  {
+    label: '异常接口数',
+    value: formatNumber(abnormalRouteCount.value),
+    desc: '当前状态异常的接口数量',
+    tone: abnormalRouteCount.value > 0 ? 'warning' : 'success'
+  },
+  {
+    label: '异常模型数',
+    value: formatNumber(abnormalModelCount.value),
+    desc: '当前状态异常的模型数量',
+    tone: abnormalModelCount.value > 0 ? 'warning' : 'success'
+  }
 ])
 
-const routeRows = computed(() => [...routeStatusList.value].sort((left, right) => {
-  if (right.severity.rank !== left.severity.rank) return right.severity.rank - left.severity.rank
-  return (Number(right.requestsTotal) || 0) - (Number(left.requestsTotal) || 0)
-}).slice(0, 6))
+const routeRows = computed(() =>
+  [...routeStatusList.value]
+    .sort((left, right) => {
+      if (right.severity.rank !== left.severity.rank) return right.severity.rank - left.severity.rank
+      return (Number(right.requestsTotal) || 0) - (Number(left.requestsTotal) || 0)
+    })
+    .slice(0, 6)
+)
 
-const modelRows = computed(() => [...modelFamilies.value].sort((left, right) => {
-  if (right.severity.rank !== left.severity.rank) return right.severity.rank - left.severity.rank
-  return (Number(right.requestsTotal) || 0) - (Number(left.requestsTotal) || 0)
-}).slice(0, 6))
+const modelRows = computed(() =>
+  [...modelFamilies.value]
+    .sort((left, right) => {
+      if (right.severity.rank !== left.severity.rank) return right.severity.rank - left.severity.rank
+      return (Number(right.requestsTotal) || 0) - (Number(left.requestsTotal) || 0)
+    })
+    .slice(0, 6)
+)
 
 const normalizeHistorySamples = (archives = []) => {
   const normalized = [...archives]
-    .map((item) => ({ timestamp: toTimestamp(item.timestamp), requestsTotal: Number(item.requestsTotal) || 0, avgLatencyMs: Number(item.avgLatencyMs) || 0 }))
+    .map((item) => ({
+      timestamp: toTimestamp(item.timestamp),
+      requestsTotal: Number(item.requestsTotal) || 0,
+      avgLatencyMs: Number(item.avgLatencyMs) || 0
+    }))
     .filter((item) => item.timestamp > 0)
     .sort((left, right) => left.timestamp - right.timestamp)
     .slice(-MAX_HISTORY_SAMPLES)
@@ -468,7 +531,11 @@ const buildChartPoints = (samples, valueKey, peakValue) => {
     const x = samples.length === 1 ? CHART.left + width / 2 : CHART.left + (width * index) / (samples.length - 1)
     const ratio = Math.max(0, (Number(item[valueKey]) || 0) / peak)
     const y = CHART.bottom - ratio * height
-    return { key: `${valueKey}-${item.timestamp}-${index}`, x: Number(x.toFixed(2)), y: Number(y.toFixed(2)) }
+    return {
+      key: `${valueKey}-${item.timestamp}-${index}`,
+      x: Number(x.toFixed(2)),
+      y: Number(y.toFixed(2))
+    }
   })
 }
 
@@ -502,12 +569,16 @@ const applyMetricsSnapshot = (snapshot) => {
   routes.value = Array.isArray(snapshot?.routes) ? snapshot.routes : []
   models.value = Array.isArray(snapshot?.models) ? snapshot.models : []
   const nextHistory = normalizeHistorySamples(snapshot?.archives || [])
-  historySamples.value = nextHistory.length ? nextHistory : [{
-    timestamp: Date.now(),
-    requestsTotal: Number(overview.value.requestsTotal) || 0,
-    requestDelta: Number(overview.value.requestsTotal) || 0,
-    avgLatencyMs: Number(overview.value.avgLatencyMs) || 0
-  }]
+  historySamples.value = nextHistory.length
+    ? nextHistory
+    : [
+        {
+          timestamp: Date.now(),
+          requestsTotal: Number(overview.value.requestsTotal) || 0,
+          requestDelta: Number(overview.value.requestsTotal) || 0,
+          avgLatencyMs: Number(overview.value.avgLatencyMs) || 0
+        }
+      ]
   lastUpdatedAt.value = Date.now()
 }
 
@@ -570,10 +641,10 @@ const goChat = () => router.push('/ai-chat')
 
 const logout = async () => {
   const confirmed = await confirmAction({
-    title: '退出当前账号？',
-    message: '退出后将返回登录页，但不会影响后端已采集的监控数据。',
+    title: '确认退出登录？',
+    message: '退出后将返回登录页，已采集的监控数据不会丢失。',
     confirmText: '退出登录',
-    cancelText: '继续查看',
+    cancelText: '取消',
     intent: 'danger'
   })
   if (!confirmed) return
@@ -835,7 +906,12 @@ onBeforeUnmount(() => {
   padding: 12px 16px;
   font-size: 11px;
   letter-spacing: 0.12em;
-  transition: transform 0.3s ease, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    opacity 0.3s ease;
 }
 
 .header-btn {
@@ -1100,20 +1176,11 @@ onBeforeUnmount(() => {
   min-height: 150px;
 }
 
-.metric-card.info {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(247, 250, 249, 0.9) 100%);
-}
-
-.metric-card.success {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(22, 32, 29, 0.92) 100%);
-}
-
-.metric-card.warning {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(36, 34, 26, 0.9) 100%);
-}
-
+.metric-card.info,
+.metric-card.success,
+.metric-card.warning,
 .metric-card.danger {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(36, 27, 27, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(247, 250, 249, 0.9) 100%);
 }
 
 .metric-label {
@@ -1354,6 +1421,3 @@ onBeforeUnmount(() => {
   }
 }
 </style>
-
-
-
