@@ -617,12 +617,13 @@ export default {
   min-width: 132px;
   padding: 0 18px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(var(--mint-rgb), 0.18), rgba(var(--mint-3-rgb), 0.12));
-  color: #b9ffea;
+  background: linear-gradient(135deg, var(--mint-1), var(--mint-2) 52%, var(--mint-3));
+  color: var(--btn-text-dark);
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   letter-spacing: 1px;
-  box-shadow: inset 0 0 0 1px rgba(var(--kicker-rgb), 0.14);
+  font-weight: 700;
+  box-shadow: 0 18px 34px var(--mint-shadow);
 }
 
 .primary-btn:disabled,

@@ -1,5 +1,5 @@
 [mainConfig]
-appName = "GopherAI"
+appName = "AgentGo"
 host = "0.0.0.0"
 port = 9090
 
@@ -23,14 +23,14 @@ charset =  "utf8mb4"
 
 [jwtConfig]
  expire_duration= 8760
- issuer= "huanheart"
- subject= "GopherAI"
- key= "GopherAI-v1"
+ issuer= "AgentGo"
+ subject= "AgentGo"
+ key= "AgentGo-v1"
 
 [adminConfig]
 username = "admin"
 password = "admin"
-email = "admin@gopherai.local"
+email = "admin@agentgo.local"
 
  [rabbitmqConfig]
   host= "127.0.0.1"

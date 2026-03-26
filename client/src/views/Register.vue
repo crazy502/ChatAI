@@ -344,12 +344,18 @@ export default {
   padding: 0 18px;
   border: none;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(var(--mint-rgb), 0.18), rgba(var(--mint-3-rgb), 0.12));
-  color: #b9ffea;
+  background: linear-gradient(135deg, var(--mint-1), var(--mint-2) 52%, var(--mint-3));
+  color: var(--btn-text-dark);
   font-family: 'Orbitron', sans-serif;
   font-size: 11px;
   letter-spacing: 1px;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.captcha-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px var(--mint-shadow);
 }
 
 .captcha-btn:disabled {
