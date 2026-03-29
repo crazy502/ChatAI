@@ -66,14 +66,14 @@
 
 <script>
 import { ref, reactive, computed, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
-import api from '../utils/api'
+// import { useRouter } from 'vue-router'
+// import api from '../utils/api'
 import { useUi } from '../composables/useUi'
 
 export default {
   name: 'RegisterView',
   setup() {
-    const router = useRouter()
+    // const router = useRouter()
     const { showToast } = useUi()
     const loading = ref(false)
     const codeLoading = ref(false)
@@ -123,13 +123,14 @@ export default {
 
       try {
         codeLoading.value = true
-        const response = await api.post('/user/captcha', { email: registerForm.email })
-        if (response.data.status_code === 1000) {
-          showToast('验证码已发送', 'success')
-          startCountdown()
-        } else {
-          showToast(response.data.status_msg || '发送失败', 'error')
-        }
+        // const response = await api.post('/user/captcha', { email: registerForm.email })
+        // if (response.data.status_code === 1000) {
+        //   showToast('验证码已发送', 'success')
+        //   startCountdown()
+        // } else {
+        //   showToast(response.data.status_msg || '发送失败', 'error')
+        // }
+        showToast('验证码功能已迁移到登录页面', 'info')
       } catch (error) {
         console.error('Send code error:', error)
         showToast('连接异常，请重试', 'error')
@@ -156,20 +157,21 @@ export default {
 
       try {
         loading.value = true
-        const response = await api.post('/user/register', {
-          email: registerForm.email,
-          captcha: registerForm.captcha,
-          password: registerForm.password
-        })
+        // const response = await api.post('/user/register', {
+        //   email: registerForm.email,
+        //   captcha: registerForm.captcha,
+        //   password: registerForm.password
+        // })
 
-        if (response.data.status_code === 1000) {
-          showToast('注册成功，请登录', 'success')
-          setTimeout(() => {
-            router.push('/login')
-          }, 1200)
-        } else {
-          showToast(response.data.status_msg || '注册失败', 'error')
-        }
+        // if (response.data.status_code === 1000) {
+        //   showToast('注册成功，请登录', 'success')
+        //   setTimeout(() => {
+        //     router.push('/login')
+        //   }, 1200)
+        // } else {
+        //   showToast(response.data.status_msg || '注册失败', 'error')
+        // }
+        showToast('注册功能已迁移到登录页面', 'info')
       } catch (error) {
         console.error('Register error:', error)
         showToast('连接异常，请重试', 'error')
@@ -179,7 +181,8 @@ export default {
     }
 
     const goToLogin = () => {
-      router.push('/login')
+      // router.push('/login')
+      window.location.href = '/login'
     }
 
     onBeforeUnmount(() => {

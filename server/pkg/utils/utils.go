@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"math/rand"
 	"strconv"
 	"time"
@@ -18,12 +16,6 @@ func GetRandomNumbers(num int) string {
 		code += strconv.Itoa(r.Intn(10))
 	}
 	return code
-}
-
-func MD5(str string) string {
-	m := md5.New()
-	_, _ = m.Write([]byte(str))
-	return hex.EncodeToString(m.Sum(nil))
 }
 
 func GenerateUUID() string {

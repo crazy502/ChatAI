@@ -1,7 +1,6 @@
 package user
 
 import (
-	"log"
 	"strings"
 
 	"server/infra/cache"
@@ -38,21 +37,8 @@ func (s *Service) Login(username, rawPassword string) (string, bool, code.Code) 
 		return "", false, code.CodeServerBusy
 	}
 
-	if password.IsBcryptHash(userInfo.Password) {
-		if !password.CheckPassword(userInfo.Password, rawPassword) {
-			return "", false, code.CodeInvalidPassword
-		}
-	} else {
-		if userInfo.Password != utils.MD5(rawPassword) {
-			return "", false, code.CodeInvalidPassword
-		}
-
-		hashedPassword, err := password.HashPassword(rawPassword)
-		if err != nil {
-			log.Println("login hash legacy password error:", err)
-		} else if err := s.repo.UpdatePassword(userInfo.ID, hashedPassword); err != nil {
-			log.Println("login migrate legacy password error:", err)
-		}
+	if !password.CheckPassword(userInfo.Password, rawPassword) {
+		return "", false, code.CodeInvalidPassword
 	}
 
 	token, err := jwt.GenerateToken(userInfo.ID, userInfo.Username, userInfo.IsAdmin)
