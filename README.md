@@ -45,6 +45,7 @@ F:\ChatAI
 │   ├── package.json
 │   └── vue.config.js
 ├── server/                  # Go 后端
+│   ├── cmd/
 │   ├── config/
 │   │   └── config.example.toml
 │   ├── infra/
@@ -70,8 +71,7 @@ F:\ChatAI
 │   │   └── utils/
 │   ├── go.mod
 │   └── main.go
-├── GPTest/                  # 辅助目录，不参与当前前后端运行
-└── GraduationThesis/        # 论文相关目录
+
 ```
 
 ## 页面说明
@@ -84,6 +84,7 @@ F:\ChatAI
 
 ## 后端模块说明
 
+- `cmd/`：命令行工具和入口点
 - `internal/user`：登录、注册、验证码、管理员初始化
 - `internal/session`：会话列表、重命名、置顶、归档
 - `internal/chat`：消息发送、流式响应、历史记录、消息入库
@@ -176,6 +177,8 @@ http://localhost:8080
 ```
 
 ## 配置文件说明
+
+**重要：** `server/config/config.toml` 文件已被添加到 `.gitignore` 中，不会被提交到版本控制系统，确保敏感信息（如 API 密钥、密码等）不会泄露。
 
 `server/config/config.toml` 主要包含以下配置块：
 
@@ -354,13 +357,3 @@ go run .
 
 - `F:\ChatAI\client\src\styles\sci-fi-theme.css`
 
-## 开发建议
-
-- 后端继续保持 `internal` 按业务域拆分
-- README 中的运行命令请优先以 `server` / `client` 子目录为工作目录
-- 如果后续要支持部署，建议把后端配置读取改成支持环境变量或绝对路径
-- 如果后续要写论文，可以重点描述“流式对话 + 指标监控 + 队列降级持久化”这三部分
-
-## 仓库说明
-
-本 README 基于当前真实代码目录与已实现功能生成，不是通用模板文档。后续如果你继续调整目录、接口或部署方式，建议同步更新这里的启动说明和接口列表。
