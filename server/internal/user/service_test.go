@@ -8,3 +8,10 @@ func TestNormalizeEmail(t *testing.T) {
 		t.Fatalf("unexpected normalized email: got %q", got)
 	}
 }
+
+func TestNormalizeEmailAppendsQQSuffixWhenMissing(t *testing.T) {
+	got := normalizeEmail(" 12345678 ")
+	if got != "12345678@qq.com" {
+		t.Fatalf("unexpected normalized email with suffix: got %q", got)
+	}
+}

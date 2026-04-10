@@ -29,15 +29,18 @@
 
             <form class="auth-form" @submit.prevent="handleLogin">
               <label class="field">
-                <span class="field-label">邮箱地址</span>
-                <input
-                  v-model="loginForm.email"
-                  type="email"
-                  class="field-input"
-                  placeholder="请输入注册邮箱"
-                  autocomplete="email"
-                  required
-                />
+                <span class="field-label">QQ 邮箱</span>
+                <div class="email-input-shell">
+                  <input
+                    v-model="loginForm.email"
+                    type="text"
+                    class="field-input email-input"
+                    placeholder="请输入邮箱账号"
+                    autocomplete="username"
+                    required
+                  />
+                  <span class="email-suffix">@qq.com</span>
+                </div>
               </label>
 
               <label class="field">
@@ -72,15 +75,18 @@
 
             <form class="auth-form" @submit.prevent="handleRegister">
               <label class="field">
-                <span class="field-label">邮箱地址</span>
-                <input
-                  v-model="registerForm.email"
-                  type="email"
-                  class="field-input"
-                  placeholder="请输入邮箱"
-                  autocomplete="email"
-                  required
-                />
+                <span class="field-label">QQ 邮箱</span>
+                <div class="email-input-shell">
+                  <input
+                    v-model="registerForm.email"
+                    type="text"
+                    class="field-input email-input"
+                    placeholder="请输入邮箱账号"
+                    autocomplete="username"
+                    required
+                  />
+                  <span class="email-suffix">@qq.com</span>
+                </div>
               </label>
 
               <div class="field">
@@ -180,6 +186,13 @@ export default {
       confirmPassword: ''
     })
 
+    const normalizeEmailLocalPart = (value) => value.trim().replace(/@qq\.com$/i, '')
+    const buildQQEmail = (value) => {
+      const localPart = normalizeEmailLocalPart(value)
+      return localPart ? `${localPart}@qq.com` : ''
+    }
+    const isValidQQEmailLocalPart = (value) => /^[^@\s]+$/.test(normalizeEmailLocalPart(value))
+
     const passwordError = computed(() => {
       if (registerForm.confirmPassword && registerForm.password !== registerForm.confirmPassword) {
         return '两次输入的密码不一致'
@@ -219,20 +232,19 @@ export default {
 
     const handleLogin = async () => {
       if (!loginForm.email || !loginForm.password) {
-        showToast('请输入邮箱和密码', 'error')
+        showToast('请输入 QQ 邮箱账号和密码', 'error')
         return
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(loginForm.email)) {
-        showToast('请输入正确的邮箱格式', 'error')
+      if (!isValidQQEmailLocalPart(loginForm.email)) {
+        showToast('请输入正确的 QQ 邮箱账号', 'error')
         return
       }
 
       try {
         loginLoading.value = true
         const response = await api.post('/user/login', {
-          email: loginForm.email.trim(),
+          email: buildQQEmail(loginForm.email),
           password: loginForm.password
         })
 
@@ -254,19 +266,18 @@ export default {
 
     const sendCode = async () => {
       if (!registerForm.email) {
-        showToast('请输入邮箱地址', 'error')
+        showToast('请输入 QQ 邮箱账号', 'error')
         return
       }
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(registerForm.email)) {
-        showToast('请输入正确的邮箱格式', 'error')
+      if (!isValidQQEmailLocalPart(registerForm.email)) {
+        showToast('请输入正确的 QQ 邮箱账号', 'error')
         return
       }
 
       try {
         codeLoading.value = true
-        const response = await api.post('/user/captcha', { email: registerForm.email })
+        const response = await api.post('/user/captcha', { email: buildQQEmail(registerForm.email) })
 
         if (response.data.status_code === 1000) {
           showToast('验证码已发送', 'success')
@@ -301,7 +312,7 @@ export default {
       try {
         registerLoading.value = true
         const response = await api.post('/user/register', {
-          email: registerForm.email.trim(),
+          email: buildQQEmail(registerForm.email),
           captcha: registerForm.captcha,
           password: registerForm.password
         })
@@ -583,6 +594,46 @@ export default {
   border-color: rgba(var(--kicker-rgb), 0.46);
   box-shadow: 0 0 0 4px var(--focus-ring), 0 0 22px rgba(var(--mint-rgb), 0.16);
   transform: translateY(-1px);
+}
+
+.email-input-shell {
+  display: flex;
+  align-items: stretch;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--kicker-rgb), 0.14);
+  background: var(--panel-soft);
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.email-input-shell:focus-within {
+  border-color: rgba(var(--kicker-rgb), 0.46);
+  box-shadow: 0 0 0 4px var(--focus-ring), 0 0 22px rgba(var(--mint-rgb), 0.16);
+  transform: translateY(-1px);
+}
+
+.email-input {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.email-input:focus {
+  border: none;
+  box-shadow: none;
+  transform: none;
+}
+
+.email-suffix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px 0 12px;
+  border-left: 1px solid rgba(var(--kicker-rgb), 0.12);
+  color: var(--text-cold-2);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 .captcha-row {

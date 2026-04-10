@@ -154,5 +154,12 @@ func (s *Service) EnsureConfiguredAdmin() error {
 }
 
 func normalizeEmail(email string) string {
-	return strings.ToLower(strings.TrimSpace(email))
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" {
+		return ""
+	}
+	if !strings.Contains(email, "@") {
+		return email + "@qq.com"
+	}
+	return email
 }
