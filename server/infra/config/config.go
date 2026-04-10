@@ -27,12 +27,32 @@ type RedisConfig struct {
 }
 
 type MysqlConfig struct {
-	MysqlPort         int    `toml:"port"`
-	MysqlHost         string `toml:"host"`
-	MysqlUser         string `toml:"user"`
-	MysqlPassword     string `toml:"password"`
-	MysqlDatabaseName string `toml:"databaseName"`
-	MysqlCharset      string `toml:"charset"`
+	MysqlPort         int                `toml:"port"`
+	MysqlHost         string             `toml:"host"`
+	MysqlUser         string             `toml:"user"`
+	MysqlPassword     string             `toml:"password"`
+	MysqlDatabaseName string             `toml:"databaseName"`
+	MysqlCharset      string             `toml:"charset"`
+	Pool              MysqlPoolConfig    `toml:"pool"`
+	Replica           MysqlReplicaConfig `toml:"replica"`
+}
+
+type MysqlPoolConfig struct {
+	MaxIdleConns           int `toml:"maxIdleConns"`
+	MaxOpenConns           int `toml:"maxOpenConns"`
+	ConnMaxLifetimeMinutes int `toml:"connMaxLifetimeMinutes"`
+	ConnMaxIdleTimeMinutes int `toml:"connMaxIdleTimeMinutes"`
+}
+
+type MysqlReplicaConfig struct {
+	Enabled      bool            `toml:"enabled"`
+	Host         string          `toml:"host"`
+	Port         int             `toml:"port"`
+	User         string          `toml:"user"`
+	Password     string          `toml:"password"`
+	DatabaseName string          `toml:"databaseName"`
+	Charset      string          `toml:"charset"`
+	Pool         MysqlPoolConfig `toml:"pool"`
 }
 
 type JWTConfig struct {

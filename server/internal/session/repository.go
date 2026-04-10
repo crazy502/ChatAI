@@ -9,6 +9,8 @@ import (
 
 type Repository struct{}
 
+const listQueryIndexName = "idx_sessions_user_archived_pinned_activity"
+
 func NewRepository() *Repository {
 	return &Repository{}
 }
@@ -16,7 +18,7 @@ func NewRepository() *Repository {
 func (r *Repository) ListByUserName(userName, keyword string, includeArchived bool) ([]Session, error) {
 	var sessions []Session
 
-	query := db.DB.Model(&Session{}).Where("user_name = ?", userName)
+	query := db.Reader().Model(&Session{}).Where("user_name = ?", userName)
 	if !includeArchived {
 		query = query.Where("archived = ?", false)
 	}
@@ -38,23 +40,23 @@ func (r *Repository) ListByUserName(userName, keyword string, includeArchived bo
 }
 
 func (r *Repository) Create(entity *Session) (*Session, error) {
-	return entity, db.DB.Create(entity).Error
+	return entity, db.Writer().Create(entity).Error
 }
 
 func (r *Repository) GetByID(sessionID string) (*Session, error) {
 	entity := new(Session)
-	err := db.DB.Where("id = ?", sessionID).First(entity).Error
+	err := db.Writer().Where("id = ?", sessionID).First(entity).Error
 	return entity, err
 }
 
 func (r *Repository) GetByIDAndUserName(sessionID, userName string) (*Session, error) {
 	entity := new(Session)
-	err := db.DB.Where("id = ? AND user_name = ?", sessionID, userName).First(entity).Error
+	err := db.Writer().Where("id = ? AND user_name = ?", sessionID, userName).First(entity).Error
 	return entity, err
 }
 
 func (r *Repository) UpdateTitle(sessionID, userName, title string) error {
-	return db.DB.Model(&Session{}).
+	return db.Writer().Model(&Session{}).
 		Where("id = ? AND user_name = ?", sessionID, userName).
 		Updates(map[string]interface{}{
 			"title":      title,
@@ -64,7 +66,7 @@ func (r *Repository) UpdateTitle(sessionID, userName, title string) error {
 }
 
 func (r *Repository) UpdatePin(sessionID, userName string, pinned bool) error {
-	return db.DB.Model(&Session{}).
+	return db.Writer().Model(&Session{}).
 		Where("id = ? AND user_name = ?", sessionID, userName).
 		Updates(map[string]interface{}{
 			"pinned":     pinned,
@@ -74,7 +76,7 @@ func (r *Repository) UpdatePin(sessionID, userName string, pinned bool) error {
 }
 
 func (r *Repository) UpdateArchive(sessionID, userName string, archived bool) error {
-	return db.DB.Model(&Session{}).
+	return db.Writer().Model(&Session{}).
 		Where("id = ? AND user_name = ?", sessionID, userName).
 		Updates(map[string]interface{}{
 			"archived":   archived,
@@ -84,11 +86,22 @@ func (r *Repository) UpdateArchive(sessionID, userName string, archived bool) er
 }
 
 func (r *Repository) TouchSession(sessionID string, lastMessageAt time.Time) error {
-	return db.DB.Model(&Session{}).
+	return db.Writer().Model(&Session{}).
 		Where("id = ?", sessionID).
 		Updates(map[string]interface{}{
 			"last_message_at": lastMessageAt,
 			"updated_at":      lastMessageAt,
 		}).
 		Error
+}
+
+func (r *Repository) EnsureListIndexes() error {
+	writer := db.Writer()
+	if writer.Migrator().HasIndex(&Session{}, listQueryIndexName) {
+		return nil
+	}
+
+	return writer.Exec(
+		"CREATE INDEX " + listQueryIndexName + " ON sessions (user_name, archived, pinned, last_message_at, updated_at, created_at)",
+	).Error
 }

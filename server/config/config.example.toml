@@ -21,6 +21,27 @@ password = "your-mysql-password"
 databaseName = "AgentGo"
 charset = "utf8mb4"
 
+[mysqlConfig.pool]
+maxIdleConns = 10
+maxOpenConns = 100
+connMaxLifetimeMinutes = 60
+connMaxIdleTimeMinutes = 10
+
+[mysqlConfig.replica]
+enabled = false
+host = "127.0.0.1"
+port = 3306
+user = "readonly-user"
+password = "readonly-password"
+databaseName = "AgentGo"
+charset = "utf8mb4"
+
+[mysqlConfig.replica.pool]
+maxIdleConns = 10
+maxOpenConns = 100
+connMaxLifetimeMinutes = 60
+connMaxIdleTimeMinutes = 10
+
 [jwtConfig]
 expire_duration = 8760
 issuer = "AgentGo"

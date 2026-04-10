@@ -27,32 +27,43 @@ func main() {
 	cfg := config.GetConfig()
 
 	if err := db.InitMysql(); err != nil {
-		observe.Error(ctx, "初始化 MySQL 失败", err)
+		observe.Error(ctx, "initialize mysql failed", err)
 		os.Exit(1)
 	}
 
 	if err := db.Migrate(new(user.User), new(session.Session), new(chat.Message)); err != nil {
-		observe.Error(ctx, "执行数据库迁移失败", err)
+		observe.Error(ctx, "run database migration failed", err)
 		os.Exit(1)
 	}
 
 	userService := user.NewService(user.NewRepository())
 	if err := userService.EnsureConfiguredAdmin(); err != nil {
-		observe.Error(ctx, "初始化管理员账号失败", err)
+		observe.Error(ctx, "initialize admin account failed", err)
+		os.Exit(1)
+	}
+
+	sessionRepo := session.NewRepository()
+	if err := sessionRepo.EnsureListIndexes(); err != nil {
+		observe.Error(ctx, "initialize session list indexes failed", err)
 		os.Exit(1)
 	}
 
 	chatRepo := chat.NewRepository()
 	if err := chatRepo.EnsureMessageIdempotency(); err != nil {
-		observe.Error(ctx, "初始化消息幂等索引失败", err)
+		observe.Error(ctx, "initialize message idempotency failed", err)
+		os.Exit(1)
+	}
+	if err := chatRepo.EnsureHistoryIndexes(); err != nil {
+		observe.Error(ctx, "initialize message history indexes failed", err)
 		os.Exit(1)
 	}
 
 	if err := cache.Init(); err != nil {
-		observe.Error(ctx, "初始化 Redis 失败", err)
+		observe.Error(ctx, "initialize redis failed", err)
 		os.Exit(1)
 	}
 	observe.Info(ctx, "redis init success")
+	observe.Info(ctx, "mysql init success", "read_replica_enabled", db.HasReplica())
 
 	if err := mq.InitRabbitMQ(); err != nil {
 		observe.Warn(ctx, "rabbitmq init degraded mode", "cause", err.Error())
@@ -61,7 +72,7 @@ func main() {
 	}
 
 	if err := startServer(cfg.Host, cfg.Port); err != nil {
-		observe.Error(ctx, "启动 HTTP 服务失败", err)
+		observe.Error(ctx, "start http server failed", err)
 		os.Exit(1)
 	}
 }

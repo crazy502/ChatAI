@@ -14,13 +14,19 @@ func NewRepository() *Repository {
 
 func (r *Repository) GetByUsername(username string) (*User, error) {
 	entity := new(User)
-	err := db.DB.Where("username = ?", username).First(entity).Error
+	err := db.Reader().Where("username = ?", username).First(entity).Error
 	return entity, err
 }
 
 func (r *Repository) GetByEmail(email string) (*User, error) {
 	entity := new(User)
-	err := db.DB.Where("email = ?", email).First(entity).Error
+	err := db.Reader().Where("email = ?", email).First(entity).Error
+	return entity, err
+}
+
+func (r *Repository) GetByEmailConsistent(email string) (*User, error) {
+	entity := new(User)
+	err := db.Writer().Where("email = ?", email).First(entity).Error
 	return entity, err
 }
 
@@ -32,18 +38,18 @@ func (r *Repository) Create(username, email, passwordHash string, isAdmin bool) 
 		Password: passwordHash,
 		IsAdmin:  isAdmin,
 	}
-	return entity, db.DB.Create(entity).Error
+	return entity, db.Writer().Create(entity).Error
 }
 
 func (r *Repository) UpdatePassword(userID int64, passwordHash string) error {
-	return db.DB.Model(&User{}).
+	return db.Writer().Model(&User{}).
 		Where("id = ?", userID).
 		Update("password", passwordHash).
 		Error
 }
 
 func (r *Repository) EnsureConfiguredAdmin(username, email, passwordHash string) error {
-	return db.DB.Transaction(func(tx *gorm.DB) error {
+	return db.Writer().Transaction(func(tx *gorm.DB) error {
 		var adminUser User
 		err := tx.Where("username = ?", username).First(&adminUser).Error
 		if err == gorm.ErrRecordNotFound {

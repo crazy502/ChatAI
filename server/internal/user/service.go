@@ -60,7 +60,7 @@ func (s *Service) Login(ctx context.Context, identifier, rawPassword string) (st
 func (s *Service) Register(ctx context.Context, email, rawPassword, captcha string) (string, bool, error) {
 	email = normalizeEmail(email)
 
-	_, err := s.repo.GetByEmail(email)
+	_, err := s.repo.GetByEmailConsistent(email)
 	if err == nil {
 		return "", false, apperror.New(code.CodeEmailExist, code.CodeEmailExist.Msg()).
 			WithField("email", email)
