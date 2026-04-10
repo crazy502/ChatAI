@@ -40,6 +40,9 @@
         <button class="ghost-btn" type="button" :disabled="syncing" @click="syncSessions()">
           {{ syncing ? '同步中...' : '同步会话' }}
         </button>
+        <button v-if="hasAdminAccess" class="ghost-btn admin-btn" type="button" @click="openAdminConsole">
+          系统控制台
+        </button>
         <button class="danger-btn" type="button" @click="logout">
           退出登录
         </button>
@@ -268,6 +271,7 @@ import python from 'highlight.js/lib/languages/python'
 import xml from 'highlight.js/lib/languages/xml'
 import 'highlight.js/styles/github.css'
 import api, { buildApiUrl } from '../utils/api.js'
+import { isAdminToken } from '../utils/auth'
 import { useUi } from '../composables/useUi'
 
 hljs.registerLanguage('bash', bash)
@@ -368,6 +372,7 @@ const totalSessionCount = computed(() => Object.keys(sessions.value).length)
 const orderedSessions = computed(() => getVisibleSessionsFromMap())
 const sessionCount = computed(() => orderedSessions.value.length)
 const activeSession = computed(() => sessions.value[currentSessionId.value] || null)
+const hasAdminAccess = computed(() => isAdminToken(localStorage.getItem('token')))
 const currentSessionLabel = computed(() => {
   if (tempSession.value) {
     return '新对话草稿'
@@ -1157,6 +1162,10 @@ const fillSuggestion = (prompt) => {
 
 const handleInput = () => {
   resizeTextarea()
+}
+
+const openAdminConsole = () => {
+  router.push('/admin-metrics')
 }
 
 const logout = async () => {

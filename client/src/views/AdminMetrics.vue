@@ -47,8 +47,7 @@
           </select>
         </div>
         <div class="action-row">
-          <button class="header-btn weak" type="button" @click="goMenu">返回控制台</button>
-          <button class="header-btn secondary" type="button" @click="goChat">进入对话</button>
+          <button class="header-btn weak" type="button" @click="goChat">返回对话界面</button>
           <button class="header-btn primary" type="button" :disabled="refreshing" @click="fetchMetrics()">
             {{ refreshing ? '刷新中...' : '立即刷新' }}
           </button>
@@ -604,8 +603,8 @@ const fetchMetrics = async ({ silent = false } = {}) => {
       console.error('Fetch metrics error:', error)
       if (error?.code === 'FORBIDDEN' || !isAdminToken(localStorage.getItem('token'))) {
         stopAutoRefresh()
-        showToast('当前账号没有管理员权限，已返回控制台。', 'error')
-        router.replace('/menu')
+        showToast('当前账号没有管理员权限，已返回对话界面。', 'error')
+        router.replace('/ai-chat')
         return
       }
       if (!silent || !lastUpdatedAt.value) {
@@ -636,7 +635,6 @@ const startAutoRefresh = () => {
   }, refreshIntervalMs.value)
 }
 
-const goMenu = () => router.push('/menu')
 const goChat = () => router.push('/ai-chat')
 
 const logout = async () => {
@@ -660,7 +658,7 @@ watch([autoRefresh, refreshIntervalMs], () => {
 onMounted(async () => {
   if (!isAdminToken(localStorage.getItem('token'))) {
     showToast('当前账号没有管理员权限，无法进入管理页。', 'error')
-    router.replace('/menu')
+    router.replace('/ai-chat')
     return
   }
   await fetchMetrics()
