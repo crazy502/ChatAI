@@ -1,124 +1,142 @@
 package chat
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
+	"server/pkg/apperror"
 	"server/pkg/code"
+	"server/pkg/requestmeta"
+	"server/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Handler struct {
-	service *Service
+type ChatService interface {
+	CreateSessionAndSendMessage(ctx context.Context, userName, userQuestion, modelType string) (string, string, error)
+	CreateStreamSessionOnly(ctx context.Context, userName, userQuestion string) (string, error)
+	StreamMessageToExistingSession(ctx context.Context, userName, sessionID, userQuestion, modelType string, writer http.ResponseWriter) error
+	ChatSend(ctx context.Context, userName, sessionID, userQuestion, modelType string) (string, error)
+	ChatStreamSend(ctx context.Context, userName, sessionID, userQuestion, modelType string, writer http.ResponseWriter) error
+	GetChatHistory(ctx context.Context, userName, sessionID string) ([]History, error)
 }
 
-func NewHandler(service *Service) *Handler {
+type Handler struct {
+	service ChatService
+}
+
+func NewHandler(service ChatService) *Handler {
 	return &Handler{service: service}
 }
 
 func (h *Handler) CreateSessionAndSendMessage(c *gin.Context) {
 	req := new(CreateSessionAndSendMessageRequest)
-	res := new(CreateSessionAndSendMessageResponse)
-	userName := c.GetString("userName")
 	if err := c.ShouldBindJSON(req); err != nil {
-		c.JSON(http.StatusOK, res.CodeOf(code.CodeInvalidParams))
+		response.Fail(c, apperror.Wrap(code.CodeInvalidParams, err, code.CodeInvalidParams.Msg()))
 		return
 	}
 
-	sessionID, aiInformation, resultCode := h.service.CreateSessionAndSendMessage(userName, req.UserQuestion, req.ModelType)
-	if resultCode != code.CodeSuccess {
-		c.JSON(http.StatusOK, res.CodeOf(resultCode))
+	userName := c.GetString("userName")
+	sessionID, aiInformation, err := h.service.CreateSessionAndSendMessage(c.Request.Context(), userName, req.UserQuestion, req.ModelType)
+	if err != nil {
+		response.Fail(c, err)
 		return
 	}
 
-	res.Success()
-	res.AiInformation = aiInformation
-	res.SessionID = sessionID
-	c.JSON(http.StatusOK, res)
+	c.Request = c.Request.WithContext(requestmeta.WithField(c.Request.Context(), requestmeta.FieldSessionID, sessionID))
+	res := &CreateSessionAndSendMessageResponse{
+		AiInformation: aiInformation,
+		SessionID:     sessionID,
+	}
+	response.OK(c, res)
 }
 
 func (h *Handler) CreateStreamSessionAndSendMessage(c *gin.Context) {
 	req := new(CreateSessionAndSendMessageRequest)
-	userName := c.GetString("userName")
 	if err := c.ShouldBindJSON(req); err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": "Invalid parameters"})
+		response.Fail(c, apperror.Wrap(code.CodeInvalidParams, err, code.CodeInvalidParams.Msg()))
 		return
 	}
 
 	h.prepareSSE(c)
+	userName := c.GetString("userName")
 
-	sessionID, resultCode := h.service.CreateStreamSessionOnly(userName, req.UserQuestion)
-	if resultCode != code.CodeSuccess {
-		c.SSEvent("error", gin.H{"message": "Failed to create session"})
+	sessionID, err := h.service.CreateStreamSessionOnly(c.Request.Context(), userName, req.UserQuestion)
+	if err != nil {
+		response.SSEError(c, err)
 		return
 	}
+
+	c.Request = c.Request.WithContext(requestmeta.WithField(c.Request.Context(), requestmeta.FieldSessionID, sessionID))
 
 	_, _ = c.Writer.WriteString(fmt.Sprintf("data: {\"sessionId\": \"%s\"}\n\n", sessionID))
 	c.Writer.Flush()
 
-	resultCode = h.service.StreamMessageToExistingSession(userName, sessionID, req.UserQuestion, req.ModelType, http.ResponseWriter(c.Writer))
-	if resultCode != code.CodeSuccess {
-		c.SSEvent("error", gin.H{"message": "Failed to send message"})
+	if err := h.service.StreamMessageToExistingSession(c.Request.Context(), userName, sessionID, req.UserQuestion, req.ModelType, http.ResponseWriter(c.Writer)); err != nil {
+		response.SSEError(c, err)
 		return
 	}
 }
 
 func (h *Handler) ChatSend(c *gin.Context) {
 	req := new(ChatSendRequest)
-	res := new(ChatSendResponse)
-	userName := c.GetString("userName")
 	if err := c.ShouldBindJSON(req); err != nil {
-		c.JSON(http.StatusOK, res.CodeOf(code.CodeInvalidParams))
+		response.Fail(c, apperror.Wrap(code.CodeInvalidParams, err, code.CodeInvalidParams.Msg()))
 		return
 	}
 
-	aiInformation, resultCode := h.service.ChatSend(userName, req.SessionID, req.UserQuestion, req.ModelType)
-	if resultCode != code.CodeSuccess {
-		c.JSON(http.StatusOK, res.CodeOf(resultCode))
+	ctx := attachSessionContext(c, req.SessionID)
+	userName := c.GetString("userName")
+
+	aiInformation, err := h.service.ChatSend(ctx, userName, req.SessionID, req.UserQuestion, req.ModelType)
+	if err != nil {
+		response.Fail(c, err)
 		return
 	}
 
-	res.Success()
-	res.AiInformation = aiInformation
-	c.JSON(http.StatusOK, res)
+	res := &ChatSendResponse{
+		AiInformation: aiInformation,
+	}
+	response.OK(c, res)
 }
 
 func (h *Handler) ChatStreamSend(c *gin.Context) {
 	req := new(ChatSendRequest)
-	userName := c.GetString("userName")
 	if err := c.ShouldBindJSON(req); err != nil {
-		c.JSON(http.StatusOK, gin.H{"error": "Invalid parameters"})
+		response.Fail(c, apperror.Wrap(code.CodeInvalidParams, err, code.CodeInvalidParams.Msg()))
 		return
 	}
 
+	ctx := attachSessionContext(c, req.SessionID)
+	userName := c.GetString("userName")
 	h.prepareSSE(c)
 
-	resultCode := h.service.ChatStreamSend(userName, req.SessionID, req.UserQuestion, req.ModelType, http.ResponseWriter(c.Writer))
-	if resultCode != code.CodeSuccess {
-		c.SSEvent("error", gin.H{"message": "Failed to send message"})
+	if err := h.service.ChatStreamSend(ctx, userName, req.SessionID, req.UserQuestion, req.ModelType, http.ResponseWriter(c.Writer)); err != nil {
+		response.SSEError(c, err)
 		return
 	}
 }
 
 func (h *Handler) ChatHistory(c *gin.Context) {
 	req := new(ChatHistoryRequest)
-	res := new(ChatHistoryResponse)
-	userName := c.GetString("userName")
 	if err := c.ShouldBindJSON(req); err != nil {
-		c.JSON(http.StatusOK, res.CodeOf(code.CodeInvalidParams))
+		response.Fail(c, apperror.Wrap(code.CodeInvalidParams, err, code.CodeInvalidParams.Msg()))
 		return
 	}
 
-	history, resultCode := h.service.GetChatHistory(userName, req.SessionID)
-	if resultCode != code.CodeSuccess {
-		c.JSON(http.StatusOK, res.CodeOf(resultCode))
+	ctx := attachSessionContext(c, req.SessionID)
+	userName := c.GetString("userName")
+	history, err := h.service.GetChatHistory(ctx, userName, req.SessionID)
+	if err != nil {
+		response.Fail(c, err)
 		return
 	}
 
-	res.Success()
-	res.History = history
-	c.JSON(http.StatusOK, res)
+	res := &ChatHistoryResponse{
+		History: history,
+	}
+	response.OK(c, res)
 }
 
 func (h *Handler) prepareSSE(c *gin.Context) {
@@ -129,4 +147,10 @@ func (h *Handler) prepareSSE(c *gin.Context) {
 	c.Header("X-Accel-Buffering", "no")
 	c.Status(http.StatusOK)
 	c.Writer.WriteHeaderNow()
+}
+
+func attachSessionContext(c *gin.Context, sessionID string) context.Context {
+	ctx := requestmeta.WithField(c.Request.Context(), requestmeta.FieldSessionID, sessionID)
+	c.Request = c.Request.WithContext(ctx)
+	return ctx
 }

@@ -1,11 +1,15 @@
 package metrics
 
 import (
+	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
 
+	"server/pkg/apperror"
 	"server/pkg/code"
+	"server/pkg/requestmeta"
 )
 
 type Overview struct {
@@ -49,12 +53,34 @@ type OverviewArchivePoint struct {
 	AvgLatencyMs  float64   `json:"avgLatencyMs"`
 }
 
+type ErrorEvent struct {
+	Timestamp time.Time         `json:"timestamp"`
+	Code      int64             `json:"code"`
+	Message   string            `json:"message"`
+	RequestID string            `json:"requestId,omitempty"`
+	UserID    int64             `json:"userId,omitempty"`
+	UserName  string            `json:"userName,omitempty"`
+	SessionID string            `json:"sessionId,omitempty"`
+	Stack     []apperror.Frame  `json:"stack,omitempty"`
+	Fields    map[string]string `json:"fields,omitempty"`
+}
+
+type AlertSnapshot struct {
+	Timestamp     time.Time `json:"timestamp"`
+	Code          int64     `json:"code"`
+	Message       string    `json:"message"`
+	Occurrences   int       `json:"occurrences"`
+	WindowSeconds int64     `json:"windowSeconds"`
+}
+
 type AllMetricsSnapshot struct {
 	GeneratedAt    time.Time              `json:"generatedAt"`
 	Overview       Overview               `json:"overview"`
 	Routes         []RouteSnapshot        `json:"routes"`
 	Models         []ModelSnapshot        `json:"models"`
 	Archives       []OverviewArchivePoint `json:"archives"`
+	RecentErrors   []ErrorEvent           `json:"recentErrors"`
+	Alerts         []AlertSnapshot        `json:"alerts"`
 	ArchiveWindowS int64                  `json:"archiveWindowSeconds"`
 }
 
@@ -90,10 +116,17 @@ type Collector struct {
 	routes               map[string]*routeState
 	models               map[string]*modelState
 	archives             []OverviewArchivePoint
+	recentErrors         []ErrorEvent
+	alerts               []AlertSnapshot
+	errorWindows         map[string][]time.Time
+	lastAlertAt          map[string]time.Time
 	lastArchiveAt        time.Time
 	lastCleanupAt        time.Time
 	archiveSampleEvery   time.Duration
 	retentionWindow      time.Duration
+	alertWindow          time.Duration
+	alertSuppressWindow  time.Duration
+	alertThreshold       int
 }
 
 var (
@@ -103,20 +136,34 @@ var (
 
 const (
 	maxOverviewArchives = 720
+	maxRecentErrors     = 100
+	maxAlerts           = 50
 	cleanupInterval     = 5 * time.Minute
 	archiveSampleEvery  = 30 * time.Second
 	retentionWindow     = 6 * time.Hour
+	alertWindow         = 2 * time.Minute
+	alertSuppressWindow = 2 * time.Minute
+	alertThreshold      = 3
 )
+
+func NewCollector() *Collector {
+	return &Collector{
+		startedAt:           time.Now(),
+		routes:              make(map[string]*routeState),
+		models:              make(map[string]*modelState),
+		errorWindows:        make(map[string][]time.Time),
+		lastAlertAt:         make(map[string]time.Time),
+		archiveSampleEvery:  archiveSampleEvery,
+		retentionWindow:     retentionWindow,
+		alertWindow:         alertWindow,
+		alertSuppressWindow: alertSuppressWindow,
+		alertThreshold:      alertThreshold,
+	}
+}
 
 func GetCollector() *Collector {
 	once.Do(func() {
-		globalCollector = &Collector{
-			startedAt:          time.Now(),
-			routes:             make(map[string]*routeState),
-			models:             make(map[string]*modelState),
-			archiveSampleEvery: archiveSampleEvery,
-			retentionWindow:    retentionWindow,
-		}
+		globalCollector = NewCollector()
 	})
 	return globalCollector
 }
@@ -127,6 +174,7 @@ func (c *Collector) cleanupLocked(now time.Time) {
 	}
 
 	staleBefore := now.Add(-c.retentionWindow)
+	alertStaleBefore := now.Add(-c.alertWindow)
 
 	for key, routeMetric := range c.routes {
 		if !routeMetric.LastSeenAt.IsZero() && routeMetric.LastSeenAt.Before(staleBefore) {
@@ -149,6 +197,45 @@ func (c *Collector) cleanupLocked(now time.Time) {
 	c.archives = filteredArchives
 	if len(c.archives) > maxOverviewArchives {
 		c.archives = c.archives[len(c.archives)-maxOverviewArchives:]
+	}
+
+	filteredErrors := c.recentErrors[:0]
+	for _, event := range c.recentErrors {
+		if event.Timestamp.After(staleBefore) || event.Timestamp.Equal(staleBefore) {
+			filteredErrors = append(filteredErrors, event)
+		}
+	}
+	c.recentErrors = filteredErrors
+	if len(c.recentErrors) > maxRecentErrors {
+		c.recentErrors = c.recentErrors[len(c.recentErrors)-maxRecentErrors:]
+	}
+
+	filteredAlerts := c.alerts[:0]
+	for _, alert := range c.alerts {
+		if alert.Timestamp.After(staleBefore) || alert.Timestamp.Equal(staleBefore) {
+			filteredAlerts = append(filteredAlerts, alert)
+		}
+	}
+	c.alerts = filteredAlerts
+	if len(c.alerts) > maxAlerts {
+		c.alerts = c.alerts[len(c.alerts)-maxAlerts:]
+	}
+
+	for key, window := range c.errorWindows {
+		filteredWindow := window[:0]
+		for _, occurredAt := range window {
+			if occurredAt.After(alertStaleBefore) || occurredAt.Equal(alertStaleBefore) {
+				filteredWindow = append(filteredWindow, occurredAt)
+			}
+		}
+
+		if len(filteredWindow) == 0 {
+			delete(c.errorWindows, key)
+			delete(c.lastAlertAt, key)
+			continue
+		}
+
+		c.errorWindows[key] = filteredWindow
 	}
 
 	c.lastCleanupAt = now
@@ -266,6 +353,78 @@ func (c *Collector) RecordModel(modelType, operation, userName string, latency t
 	c.cleanupLocked(now)
 }
 
+func (c *Collector) RecordError(ctx context.Context, err error) {
+	appErr := apperror.From(err)
+	if appErr == nil {
+		return
+	}
+
+	now := time.Now()
+	event := ErrorEvent{
+		Timestamp: now,
+		Code:      appErr.Code.Code(),
+		Message:   appErr.Message,
+		RequestID: requestmeta.String(ctx, requestmeta.FieldRequestID),
+		UserID:    requestmeta.Int64(ctx, requestmeta.FieldUserID),
+		UserName:  requestmeta.String(ctx, requestmeta.FieldUserName),
+		SessionID: requestmeta.String(ctx, requestmeta.FieldSessionID),
+		Stack:     apperror.StackOf(appErr),
+		Fields:    stringifyFields(apperror.FieldsOf(appErr)),
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.recentErrors = append(c.recentErrors, event)
+	if len(c.recentErrors) > maxRecentErrors {
+		c.recentErrors = c.recentErrors[len(c.recentErrors)-maxRecentErrors:]
+	}
+
+	c.recordAlertLocked(now, appErr)
+	c.cleanupLocked(now)
+}
+
+func (c *Collector) recordAlertLocked(now time.Time, err *apperror.Error) {
+	if err == nil || !shouldAlert(err.Code) {
+		return
+	}
+
+	key := fmt.Sprintf("%d", err.Code.Code())
+	window := c.errorWindows[key]
+	staleBefore := now.Add(-c.alertWindow)
+
+	filteredWindow := window[:0]
+	for _, occurredAt := range window {
+		if occurredAt.After(staleBefore) || occurredAt.Equal(staleBefore) {
+			filteredWindow = append(filteredWindow, occurredAt)
+		}
+	}
+	filteredWindow = append(filteredWindow, now)
+	c.errorWindows[key] = filteredWindow
+
+	if len(filteredWindow) < c.alertThreshold {
+		return
+	}
+
+	lastAlertAt := c.lastAlertAt[key]
+	if !lastAlertAt.IsZero() && now.Sub(lastAlertAt) < c.alertSuppressWindow {
+		return
+	}
+
+	c.alerts = append(c.alerts, AlertSnapshot{
+		Timestamp:     now,
+		Code:          err.Code.Code(),
+		Message:       fmt.Sprintf("错误码 %d 在最近 %d 秒内出现 %d 次", err.Code.Code(), int64(c.alertWindow.Seconds()), len(filteredWindow)),
+		Occurrences:   len(filteredWindow),
+		WindowSeconds: int64(c.alertWindow.Seconds()),
+	})
+	c.lastAlertAt[key] = now
+
+	if len(c.alerts) > maxAlerts {
+		c.alerts = c.alerts[len(c.alerts)-maxAlerts:]
+	}
+}
+
 func (c *Collector) Overview() Overview {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -374,6 +533,34 @@ func (c *Collector) ArchiveSnapshots() []OverviewArchivePoint {
 	return snapshots
 }
 
+func (c *Collector) RecentErrors() []ErrorEvent {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	snapshots := make([]ErrorEvent, len(c.recentErrors))
+	copy(snapshots, c.recentErrors)
+
+	sort.Slice(snapshots, func(i, j int) bool {
+		return snapshots[i].Timestamp.After(snapshots[j].Timestamp)
+	})
+
+	return snapshots
+}
+
+func (c *Collector) AlertSnapshots() []AlertSnapshot {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	snapshots := make([]AlertSnapshot, len(c.alerts))
+	copy(snapshots, c.alerts)
+
+	sort.Slice(snapshots, func(i, j int) bool {
+		return snapshots[i].Timestamp.After(snapshots[j].Timestamp)
+	})
+
+	return snapshots
+}
+
 func (c *Collector) AllMetricsSnapshot() AllMetricsSnapshot {
 	c.mu.Lock()
 	c.cleanupLocked(time.Now())
@@ -385,6 +572,30 @@ func (c *Collector) AllMetricsSnapshot() AllMetricsSnapshot {
 		Routes:         c.RouteSnapshots(),
 		Models:         c.ModelSnapshots(),
 		Archives:       c.ArchiveSnapshots(),
+		RecentErrors:   c.RecentErrors(),
+		Alerts:         c.AlertSnapshots(),
 		ArchiveWindowS: int64(c.retentionWindow.Seconds()),
 	}
+}
+
+func shouldAlert(resultCode code.Code) bool {
+	return resultCode.Code() >= code.CodeServerBusy.Code()
+}
+
+func stringifyFields(fields map[string]any) map[string]string {
+	if len(fields) == 0 {
+		return nil
+	}
+
+	result := make(map[string]string, len(fields))
+	for key, value := range fields {
+		if key == "" || value == nil {
+			continue
+		}
+		result[key] = fmt.Sprintf("%v", value)
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }

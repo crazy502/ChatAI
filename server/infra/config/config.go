@@ -1,7 +1,9 @@
 package config
 
 import (
-	"log"
+	"context"
+
+	"server/pkg/observe"
 
 	"github.com/BurntSushi/toml"
 )
@@ -94,7 +96,7 @@ func InitConfig() error {
 	}
 
 	if _, err := toml.DecodeFile("config/config.toml", cfg); err != nil {
-		log.Println(err)
+		observe.Error(context.Background(), "加载配置文件失败", err)
 		return err
 	}
 	return nil

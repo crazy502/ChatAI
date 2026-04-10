@@ -28,9 +28,9 @@ func New() *gin.Engine {
 	adminHandler := admin.NewHandler(adminService)
 
 	r := gin.New()
-	r.Use(gin.Logger())
+	r.Use(middleware.RequestContext())
 	r.Use(middleware.Recovery())
-	r.Use(middleware.RequestMetrics())
+	r.Use(middleware.RequestObserver())
 
 	api := r.Group("/api/v1")
 

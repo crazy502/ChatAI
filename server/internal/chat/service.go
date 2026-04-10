@@ -3,13 +3,16 @@ package chat
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"server/internal/ai"
 	sessionpkg "server/internal/session"
+	"server/pkg/apperror"
 	"server/pkg/code"
+	"server/pkg/observe"
+	"server/pkg/requestmeta"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -27,124 +30,119 @@ func NewService(repo *Repository, sessionRepo *sessionpkg.Repository) *Service {
 	}
 }
 
-func (s *Service) CreateSessionAndSendMessage(userName, userQuestion, modelType string) (string, string, code.Code) {
-	newSession := &sessionpkg.Session{
-		ID:       uuid.New().String(),
-		UserName: userName,
-		Title:    sessionpkg.NormalizeTitle(userQuestion),
-	}
-
-	createdSession, err := s.sessionRepo.Create(newSession)
+func (s *Service) CreateSessionAndSendMessage(ctx context.Context, userName, userQuestion, modelType string) (string, string, error) {
+	createdSession, ctx, err := s.createSession(ctx, userName, userQuestion)
 	if err != nil {
-		log.Println("create session and send message create session error:", err)
-		return "", "", code.CodeServerBusy
+		return "", "", err
 	}
 
-	helper, resultCode := s.getOrCreateHydratedHelper(userName, createdSession.ID, modelType)
-	if resultCode != code.CodeSuccess {
-		return "", "", resultCode
-	}
-
-	aiResponse, err := helper.GenerateResponse(userName, context.Background(), userQuestion)
+	helper, err := s.getOrCreateHydratedHelper(ctx, userName, createdSession.ID, modelType)
 	if err != nil {
-		log.Println("create session and send message generate response error:", err)
-		return "", "", code.AIModelFail
+		return "", "", err
 	}
 
-	s.touchSessionActivity(createdSession.ID)
-	return createdSession.ID, aiResponse.Content, code.CodeSuccess
+	aiResponse, err := helper.GenerateResponse(userName, ctx, userQuestion)
+	if err != nil {
+		return "", "", apperror.Wrap(code.AIModelFail, err, "generate chat response failed").
+			WithField("session_id", createdSession.ID).
+			WithField("model_type", modelType)
+	}
+
+	s.touchSessionActivity(ctx, createdSession.ID)
+	return createdSession.ID, aiResponse.Content, nil
 }
 
-func (s *Service) CreateStreamSessionOnly(userName, userQuestion string) (string, code.Code) {
-	newSession := &sessionpkg.Session{
-		ID:       uuid.New().String(),
-		UserName: userName,
-		Title:    sessionpkg.NormalizeTitle(userQuestion),
-	}
-
-	createdSession, err := s.sessionRepo.Create(newSession)
+func (s *Service) CreateStreamSessionOnly(ctx context.Context, userName, userQuestion string) (string, error) {
+	createdSession, _, err := s.createSession(ctx, userName, userQuestion)
 	if err != nil {
-		log.Println("create stream session only create session error:", err)
-		return "", code.CodeServerBusy
+		return "", err
 	}
 
-	return createdSession.ID, code.CodeSuccess
+	return createdSession.ID, nil
 }
 
-func (s *Service) StreamMessageToExistingSession(userName, sessionID, userQuestion, modelType string, writer http.ResponseWriter) code.Code {
+func (s *Service) StreamMessageToExistingSession(ctx context.Context, userName, sessionID, userQuestion, modelType string, writer http.ResponseWriter) error {
 	flusher, ok := writer.(http.Flusher)
 	if !ok {
-		log.Println("stream message unsupported")
-		return code.CodeServerBusy
+		return apperror.New(code.CodeServerBusy, "streaming response is not supported").
+			WithField("session_id", sessionID)
 	}
 
-	if _, resultCode := s.loadOwnedSession(userName, sessionID); resultCode != code.CodeSuccess {
-		return resultCode
+	ctx = requestmeta.WithField(ctx, requestmeta.FieldSessionID, sessionID)
+
+	if _, err := s.loadOwnedSession(ctx, userName, sessionID); err != nil {
+		return err
 	}
 
 	if err := writeSSEJSON(writer, flusher, map[string]bool{"ready": true}); err != nil {
-		log.Println("stream message write ready error:", err)
-		return code.CodeServerBusy
+		return apperror.Wrap(code.CodeServerBusy, err, "write stream ready event failed").
+			WithField("session_id", sessionID)
 	}
 
-	helper, resultCode := s.getOrCreateHydratedHelper(userName, sessionID, modelType)
-	if resultCode != code.CodeSuccess {
-		return resultCode
+	helper, err := s.getOrCreateHydratedHelper(ctx, userName, sessionID, modelType)
+	if err != nil {
+		return err
 	}
 
 	callback := func(msg string) {
-		if err := writeSSEJSON(writer, flusher, map[string]string{"content": msg}); err != nil {
-			log.Println("stream message write chunk error:", err)
+		if writeErr := writeSSEJSON(writer, flusher, map[string]string{"content": msg}); writeErr != nil {
+			observe.Error(ctx, "write stream chunk failed", apperror.Wrap(code.CodeServerBusy, writeErr, "write stream chunk failed"))
 		}
 	}
 
-	if _, err := helper.StreamResponse(userName, context.Background(), callback, userQuestion); err != nil {
-		log.Println("stream response error:", err)
-		return code.AIModelFail
+	if _, err := helper.StreamResponse(userName, ctx, callback, userQuestion); err != nil {
+		return apperror.Wrap(code.AIModelFail, err, "stream chat response failed").
+			WithField("session_id", sessionID).
+			WithField("model_type", modelType)
 	}
 
 	if err := writeSSEDone(writer, flusher); err != nil {
-		log.Println("stream message write done error:", err)
-		return code.AIModelFail
+		return apperror.Wrap(code.AIModelFail, err, "write stream done event failed").
+			WithField("session_id", sessionID)
 	}
 
-	s.touchSessionActivity(sessionID)
-	return code.CodeSuccess
+	s.touchSessionActivity(ctx, sessionID)
+	return nil
 }
 
-func (s *Service) ChatSend(userName, sessionID, userQuestion, modelType string) (string, code.Code) {
-	if _, resultCode := s.loadOwnedSession(userName, sessionID); resultCode != code.CodeSuccess {
-		return "", resultCode
+func (s *Service) ChatSend(ctx context.Context, userName, sessionID, userQuestion, modelType string) (string, error) {
+	ctx = requestmeta.WithField(ctx, requestmeta.FieldSessionID, sessionID)
+
+	if _, err := s.loadOwnedSession(ctx, userName, sessionID); err != nil {
+		return "", err
 	}
 
-	helper, resultCode := s.getOrCreateHydratedHelper(userName, sessionID, modelType)
-	if resultCode != code.CodeSuccess {
-		return "", resultCode
-	}
-
-	aiResponse, err := helper.GenerateResponse(userName, context.Background(), userQuestion)
+	helper, err := s.getOrCreateHydratedHelper(ctx, userName, sessionID, modelType)
 	if err != nil {
-		log.Println("chat send generate response error:", err)
-		return "", code.AIModelFail
+		return "", err
 	}
 
-	s.touchSessionActivity(sessionID)
-	return aiResponse.Content, code.CodeSuccess
+	aiResponse, err := helper.GenerateResponse(userName, ctx, userQuestion)
+	if err != nil {
+		return "", apperror.Wrap(code.AIModelFail, err, "generate chat response failed").
+			WithField("session_id", sessionID).
+			WithField("model_type", modelType)
+	}
+
+	s.touchSessionActivity(ctx, sessionID)
+	return aiResponse.Content, nil
 }
 
-func (s *Service) ChatStreamSend(userName, sessionID, userQuestion, modelType string, writer http.ResponseWriter) code.Code {
-	return s.StreamMessageToExistingSession(userName, sessionID, userQuestion, modelType, writer)
+func (s *Service) ChatStreamSend(ctx context.Context, userName, sessionID, userQuestion, modelType string, writer http.ResponseWriter) error {
+	return s.StreamMessageToExistingSession(ctx, userName, sessionID, userQuestion, modelType, writer)
 }
 
-func (s *Service) GetChatHistory(userName, sessionID string) ([]History, code.Code) {
-	if _, resultCode := s.loadOwnedSession(userName, sessionID); resultCode != code.CodeSuccess {
-		return nil, resultCode
+func (s *Service) GetChatHistory(ctx context.Context, userName, sessionID string) ([]History, error) {
+	ctx = requestmeta.WithField(ctx, requestmeta.FieldSessionID, sessionID)
+
+	if _, err := s.loadOwnedSession(ctx, userName, sessionID); err != nil {
+		return nil, err
 	}
 
 	messages, err := s.repo.GetMessagesBySessionID(sessionID)
 	if err != nil {
-		log.Println("get chat history error:", err)
-		return nil, code.CodeServerBusy
+		return nil, apperror.Wrap(code.CodeServerBusy, err, "load chat history failed").
+			WithField("session_id", sessionID)
 	}
 
 	history := make([]History, 0, len(messages))
@@ -155,14 +153,32 @@ func (s *Service) GetChatHistory(userName, sessionID string) ([]History, code.Co
 		})
 	}
 
-	return history, code.CodeSuccess
+	return history, nil
 }
 
-func (s *Service) getOrCreateHydratedHelper(userName, sessionID, modelType string) (*ai.Helper, code.Code) {
+func (s *Service) createSession(ctx context.Context, userName, userQuestion string) (*sessionpkg.Session, context.Context, error) {
+	newSession := &sessionpkg.Session{
+		ID:       uuid.New().String(),
+		UserName: userName,
+		Title:    sessionpkg.NormalizeTitle(userQuestion),
+	}
+
+	createdSession, err := s.sessionRepo.Create(newSession)
+	if err != nil {
+		return nil, ctx, apperror.Wrap(code.CodeServerBusy, err, "create session failed").
+			WithField("user_name", userName)
+	}
+
+	ctx = requestmeta.WithField(ctx, requestmeta.FieldSessionID, createdSession.ID)
+	return createdSession, ctx, nil
+}
+
+func (s *Service) getOrCreateHydratedHelper(ctx context.Context, userName, sessionID, modelType string) (*ai.Helper, error) {
 	helper, err := ai.GetGlobalManager().GetOrCreateHelper(userName, sessionID, modelType, map[string]interface{}{})
 	if err != nil {
-		log.Println("get or create helper error:", err)
-		return nil, code.AIModelFail
+		return nil, mapModelFactoryError(err).
+			WithField("session_id", sessionID).
+			WithField("model_type", modelType)
 	}
 
 	helper.SetSaveFunc(func(message *ai.StoredMessage) error {
@@ -170,38 +186,56 @@ func (s *Service) getOrCreateHydratedHelper(userName, sessionID, modelType strin
 	})
 
 	if helper.HasMessages() {
-		return helper, code.CodeSuccess
+		return helper, nil
 	}
 
 	history, err := s.repo.GetMessagesBySessionID(sessionID)
 	if err != nil {
-		log.Println("hydrate helper load history error:", err)
-		return nil, code.CodeServerBusy
+		return nil, apperror.Wrap(code.CodeServerBusy, err, "hydrate helper history failed").
+			WithField("session_id", sessionID)
 	}
 
 	if len(history) > 0 {
 		helper.ReplaceMessages(toAIStoredMessages(history))
 	}
 
-	return helper, code.CodeSuccess
+	return helper, nil
 }
 
-func (s *Service) loadOwnedSession(userName, sessionID string) (*sessionpkg.Session, code.Code) {
+func (s *Service) loadOwnedSession(ctx context.Context, userName, sessionID string) (*sessionpkg.Session, error) {
 	sessionInfo, err := s.sessionRepo.GetByIDAndUserName(sessionID, userName)
 	if err == gorm.ErrRecordNotFound {
-		return nil, code.CodeRecordNotFound
+		return nil, apperror.New(code.CodeRecordNotFound, code.CodeRecordNotFound.Msg()).
+			WithField("user_name", userName).
+			WithField("session_id", sessionID)
 	}
 	if err != nil {
-		log.Println("load owned session error:", err)
-		return nil, code.CodeServerBusy
+		return nil, apperror.Wrap(code.CodeServerBusy, err, "load session failed").
+			WithField("user_name", userName).
+			WithField("session_id", sessionID)
 	}
 
-	return sessionInfo, code.CodeSuccess
+	return sessionInfo, nil
 }
 
-func (s *Service) touchSessionActivity(sessionID string) {
+func (s *Service) touchSessionActivity(ctx context.Context, sessionID string) {
 	if err := s.sessionRepo.TouchSession(sessionID, time.Now()); err != nil {
-		log.Println("touch session activity error:", err)
+		observe.Error(ctx, "touch session activity failed", apperror.Wrap(code.CodeServerBusy, err, "touch session activity failed").
+			WithField("session_id", sessionID))
+	}
+}
+
+func mapModelFactoryError(err error) *apperror.Error {
+	if err == nil {
+		return nil
+	}
+
+	message := err.Error()
+	switch {
+	case strings.Contains(message, "unsupported model type"):
+		return apperror.Wrap(code.AIModelNotFind, err, code.AIModelNotFind.Msg())
+	default:
+		return apperror.Wrap(code.AIModelCannotOpen, err, code.AIModelCannotOpen.Msg())
 	}
 }
 

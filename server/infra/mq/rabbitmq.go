@@ -1,12 +1,13 @@
 package mq
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 
 	"server/infra/config"
+	"server/pkg/observe"
 
 	"github.com/streadway/amqp"
 )
@@ -137,42 +138,42 @@ func (r *RabbitMQ) Consume(handle func(msg *amqp.Delivery) error) {
 	r.mu.Lock()
 	if _, err := r.declareQueue(); err != nil {
 		r.mu.Unlock()
-		log.Printf("rabbitmq declare queue failed: %v", err)
+		observe.Warn(context.Background(), "rabbitmq declare queue failed", "cause", err.Error(), "queue", r.Key)
 		return
 	}
 
 	if err := r.channel.Qos(8, 0, false); err != nil {
 		r.mu.Unlock()
-		log.Printf("rabbitmq qos setup failed: %v", err)
+		observe.Warn(context.Background(), "rabbitmq qos setup failed", "cause", err.Error(), "queue", r.Key)
 		return
 	}
 
 	msgs, err := r.channel.Consume(r.Key, "", false, false, false, false, nil)
 	r.mu.Unlock()
 	if err != nil {
-		log.Printf("rabbitmq consume setup failed: %v", err)
+		observe.Warn(context.Background(), "rabbitmq consume setup failed", "cause", err.Error(), "queue", r.Key)
 		return
 	}
 
 	for msg := range msgs {
 		if err := handle(&msg); err != nil {
 			if errors.Is(err, ErrDropMessage) {
-				log.Printf("rabbitmq dropping poison message: %v", err)
+				observe.Warn(context.Background(), "rabbitmq dropping poison message", "cause", err.Error(), "queue", r.Key)
 				if rejectErr := msg.Reject(false); rejectErr != nil {
-					log.Printf("rabbitmq reject poison message failed: %v", rejectErr)
+					observe.Warn(context.Background(), "rabbitmq reject poison message failed", "cause", rejectErr.Error(), "queue", r.Key)
 				}
 				continue
 			}
 
-			log.Printf("rabbitmq consume failed, requeueing message: %v", err)
+			observe.Warn(context.Background(), "rabbitmq consume failed, requeueing message", "cause", err.Error(), "queue", r.Key)
 			if nackErr := msg.Nack(false, true); nackErr != nil {
-				log.Printf("rabbitmq nack failed: %v", nackErr)
+				observe.Warn(context.Background(), "rabbitmq nack failed", "cause", nackErr.Error(), "queue", r.Key)
 			}
 			continue
 		}
 
 		if err := msg.Ack(false); err != nil {
-			log.Printf("rabbitmq ack failed: %v", err)
+			observe.Warn(context.Background(), "rabbitmq ack failed", "cause", err.Error(), "queue", r.Key)
 		}
 	}
 }

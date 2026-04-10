@@ -1,11 +1,13 @@
 package user
 
 import (
+	"context"
 	"strings"
 
 	"server/infra/cache"
 	"server/infra/config"
 	"server/infra/mail"
+	"server/pkg/apperror"
 	"server/pkg/code"
 	"server/pkg/jwt"
 	"server/pkg/password"
@@ -28,78 +30,94 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) Login(username, rawPassword string) (string, bool, code.Code) {
+func (s *Service) Login(ctx context.Context, username, rawPassword string) (string, bool, error) {
 	userInfo, err := s.repo.GetByUsername(username)
 	if err == gorm.ErrRecordNotFound {
-		return "", false, code.CodeUserNotExist
+		return "", false, apperror.New(code.CodeUserNotExist, code.CodeUserNotExist.Msg()).
+			WithField("username", username)
 	}
 	if err != nil {
-		return "", false, code.CodeServerBusy
+		return "", false, apperror.Wrap(code.CodeServerBusy, err, "query user failed").
+			WithField("username", username)
 	}
 
 	if !password.CheckPassword(userInfo.Password, rawPassword) {
-		return "", false, code.CodeInvalidPassword
+		return "", false, apperror.New(code.CodeInvalidPassword, code.CodeInvalidPassword.Msg()).
+			WithField("username", username)
 	}
 
 	token, err := jwt.GenerateToken(userInfo.ID, userInfo.Username, userInfo.IsAdmin)
 	if err != nil {
-		return "", false, code.CodeServerBusy
+		return "", false, apperror.Wrap(code.CodeServerBusy, err, "generate login token failed").
+			WithField("user_id", userInfo.ID)
 	}
 
-	return token, userInfo.IsAdmin, code.CodeSuccess
+	return token, userInfo.IsAdmin, nil
 }
 
-func (s *Service) Register(email, rawPassword, captcha string) (string, bool, code.Code) {
+func (s *Service) Register(ctx context.Context, email, rawPassword, captcha string) (string, bool, error) {
 	_, err := s.repo.GetByEmail(email)
 	if err == nil {
-		return "", false, code.CodeEmailExist
+		return "", false, apperror.New(code.CodeEmailExist, code.CodeEmailExist.Msg()).
+			WithField("email", email)
 	}
 	if err != nil && err != gorm.ErrRecordNotFound {
-		return "", false, code.CodeServerBusy
+		return "", false, apperror.Wrap(code.CodeServerBusy, err, "query email failed").
+			WithField("email", email)
 	}
 
 	ok, err := cache.CheckCaptchaForEmail(email, captcha)
 	if err != nil {
-		return "", false, code.CodeServerBusy
+		return "", false, apperror.Wrap(code.CodeServerBusy, err, "verify captcha failed").
+			WithField("email", email)
 	}
 	if !ok {
-		return "", false, code.CodeInvalidCaptcha
+		return "", false, apperror.New(code.CodeInvalidCaptcha, code.CodeInvalidCaptcha.Msg()).
+			WithField("email", email)
 	}
 
 	username := utils.GetRandomNumbers(11)
 	hashedPassword, err := password.HashPassword(rawPassword)
 	if err != nil {
-		return "", false, code.CodeServerBusy
+		return "", false, apperror.Wrap(code.CodeServerBusy, err, "generate password hash failed").
+			WithField("email", email)
 	}
 
 	userInfo, err := s.repo.Create(username, email, hashedPassword, false)
 	if err != nil {
-		return "", false, code.CodeServerBusy
+		return "", false, apperror.Wrap(code.CodeServerBusy, err, "create user failed").
+			WithField("email", email).
+			WithField("username", username)
 	}
 
 	if err := mail.SendCaptcha(email, username, mail.UserNameMsg); err != nil {
-		return "", false, code.CodeServerBusy
+		return "", false, apperror.Wrap(code.CodeServerBusy, err, "send username email failed").
+			WithField("email", email).
+			WithField("user_id", userInfo.ID)
 	}
 
 	token, err := jwt.GenerateToken(userInfo.ID, userInfo.Username, userInfo.IsAdmin)
 	if err != nil {
-		return "", false, code.CodeServerBusy
+		return "", false, apperror.Wrap(code.CodeServerBusy, err, "generate register token failed").
+			WithField("user_id", userInfo.ID)
 	}
 
-	return token, userInfo.IsAdmin, code.CodeSuccess
+	return token, userInfo.IsAdmin, nil
 }
 
-func (s *Service) SendCaptcha(email string) code.Code {
+func (s *Service) SendCaptcha(ctx context.Context, email string) error {
 	sendCode := utils.GetRandomNumbers(6)
 	if err := cache.SetCaptchaForEmail(email, sendCode); err != nil {
-		return code.CodeServerBusy
+		return apperror.Wrap(code.CodeServerBusy, err, "store captcha failed").
+			WithField("email", email)
 	}
 
 	if err := mail.SendCaptcha(email, sendCode, mail.CodeMsg); err != nil {
-		return code.CodeServerBusy
+		return apperror.Wrap(code.CodeServerBusy, err, "send captcha email failed").
+			WithField("email", email)
 	}
 
-	return code.CodeSuccess
+	return nil
 }
 
 func (s *Service) EnsureConfiguredAdmin() error {
@@ -122,8 +140,14 @@ func (s *Service) EnsureConfiguredAdmin() error {
 
 	passwordHash, err := password.HashPassword(adminPassword)
 	if err != nil {
-		return err
+		return apperror.Wrap(code.CodeServerBusy, err, "initialize admin password hash failed")
 	}
 
-	return s.repo.EnsureConfiguredAdmin(adminUsername, adminEmail, passwordHash)
+	if err := s.repo.EnsureConfiguredAdmin(adminUsername, adminEmail, passwordHash); err != nil {
+		return apperror.Wrap(code.CodeServerBusy, err, "initialize admin account failed").
+			WithField("username", adminUsername).
+			WithField("email", adminEmail)
+	}
+
+	return nil
 }

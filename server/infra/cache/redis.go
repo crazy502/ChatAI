@@ -17,7 +17,7 @@ var (
 	ctx = context.Background()
 )
 
-func Init() {
+func Init() error {
 	cfg := config.GetConfig()
 	addr := cfg.RedisHost + ":" + strconv.Itoa(cfg.RedisPort)
 
@@ -28,8 +28,9 @@ func Init() {
 	})
 
 	if _, err := Rdb.Ping(ctx).Result(); err != nil {
-		panic("redis connect failed: " + err.Error())
+		return fmt.Errorf("redis connect failed: %w", err)
 	}
+	return nil
 }
 
 func SetCaptchaForEmail(email, captcha string) error {

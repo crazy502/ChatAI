@@ -1,15 +1,16 @@
 package chat
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 
 	"server/infra/mq"
 	"server/internal/ai"
+	"server/pkg/observe"
 
 	"github.com/streadway/amqp"
 )
@@ -77,7 +78,7 @@ func saveWithQueue(repo *Repository, message *ai.StoredMessage) error {
 		if publishErr := mq.RMQMessage.Publish(data); publishErr == nil {
 			return nil
 		} else {
-			log.Printf("rabbitmq publish failed, fallback to direct db insert: %v", publishErr)
+			observe.Warn(context.Background(), "rabbitmq publish failed, fallback to direct db insert", "cause", publishErr.Error(), "session_id", message.SessionID)
 		}
 	}
 

@@ -1,6 +1,10 @@
 package admin
 
-import "server/infra/metrics"
+import (
+	"context"
+
+	"server/infra/metrics"
+)
 
 type Service struct{}
 
@@ -8,6 +12,6 @@ func NewService() *Service {
 	return &Service{}
 }
 
-func (s *Service) AllMetricsSnapshot() metrics.AllMetricsSnapshot {
+func (s *Service) AllMetricsSnapshot(ctx context.Context) metrics.AllMetricsSnapshot {
 	return metrics.GetCollector().AllMetricsSnapshot()
 }

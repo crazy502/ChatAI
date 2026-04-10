@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"net/http"
 	"strings"
 
 	"server/infra/config"
+	"server/pkg/apperror"
 	"server/pkg/code"
 	"server/pkg/response"
 
@@ -13,14 +13,13 @@ import (
 
 func RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		res := new(response.Response)
 		adminUsername := strings.TrimSpace(config.GetConfig().AdminConfig.Username)
 		if adminUsername == "" {
 			adminUsername = "admin"
 		}
 
 		if !c.GetBool("isAdmin") || c.GetString("userName") != adminUsername {
-			c.JSON(http.StatusOK, res.CodeOf(code.CodeForbidden))
+			response.Fail(c, apperror.New(code.CodeForbidden, code.CodeForbidden.Msg()))
 			c.Abort()
 			return
 		}

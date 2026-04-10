@@ -1,8 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"os"
 
 	"server/infra/cache"
 	"server/infra/config"
@@ -12,6 +13,7 @@ import (
 	"server/internal/router"
 	"server/internal/session"
 	"server/internal/user"
+	"server/pkg/observe"
 )
 
 func startServer(addr string, port int) error {
@@ -20,40 +22,46 @@ func startServer(addr string, port int) error {
 }
 
 func main() {
+	observe.Init()
+	ctx := context.Background()
 	cfg := config.GetConfig()
 
 	if err := db.InitMysql(); err != nil {
-		log.Println("InitMysql error,", err)
-		return
+		observe.Error(ctx, "初始化 MySQL 失败", err)
+		os.Exit(1)
 	}
 
 	if err := db.Migrate(new(user.User), new(session.Session), new(chat.Message)); err != nil {
-		log.Println("migrate error,", err)
-		return
+		observe.Error(ctx, "执行数据库迁移失败", err)
+		os.Exit(1)
 	}
 
 	userService := user.NewService(user.NewRepository())
 	if err := userService.EnsureConfiguredAdmin(); err != nil {
-		log.Println("ensure admin error,", err)
-		return
+		observe.Error(ctx, "初始化管理员账号失败", err)
+		os.Exit(1)
 	}
 
 	chatRepo := chat.NewRepository()
 	if err := chatRepo.EnsureMessageIdempotency(); err != nil {
-		log.Println("ensure message idempotency error,", err)
-		return
+		observe.Error(ctx, "初始化消息幂等索引失败", err)
+		os.Exit(1)
 	}
 
-	cache.Init()
-	log.Println("redis init success")
+	if err := cache.Init(); err != nil {
+		observe.Error(ctx, "初始化 Redis 失败", err)
+		os.Exit(1)
+	}
+	observe.Info(ctx, "redis init success")
 
 	if err := mq.InitRabbitMQ(); err != nil {
-		log.Println("rabbitmq init degraded mode:", err)
+		observe.Warn(ctx, "rabbitmq init degraded mode", "cause", err.Error())
 	} else {
-		log.Println("rabbitmq init success")
+		observe.Info(ctx, "rabbitmq init success")
 	}
 
 	if err := startServer(cfg.Host, cfg.Port); err != nil {
-		panic(err)
+		observe.Error(ctx, "启动 HTTP 服务失败", err)
+		os.Exit(1)
 	}
 }
