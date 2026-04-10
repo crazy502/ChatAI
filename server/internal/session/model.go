@@ -8,7 +8,7 @@ import (
 
 type Session struct {
 	ID            string         `gorm:"primaryKey;type:varchar(36)" json:"id"`
-	UserName      string         `gorm:"index;not null" json:"username"`
+	UserName      string         `gorm:"type:varchar(100);index;not null" json:"username"`
 	Title         string         `gorm:"type:varchar(100)" json:"title"`
 	Pinned        bool           `gorm:"default:false;not null" json:"pinned"`
 	Archived      bool           `gorm:"default:false;not null" json:"archived"`

@@ -11,7 +11,7 @@ import (
 )
 
 type UserService interface {
-	Login(ctx context.Context, username, rawPassword string) (string, bool, error)
+	Login(ctx context.Context, identifier, rawPassword string) (string, bool, error)
 	Register(ctx context.Context, email, rawPassword, captcha string) (string, bool, error)
 	SendCaptcha(ctx context.Context, email string) error
 }
@@ -31,7 +31,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, isAdmin, err := h.service.Login(c.Request.Context(), req.Username, req.Password)
+	token, isAdmin, err := h.service.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		response.Fail(c, err)
 		return

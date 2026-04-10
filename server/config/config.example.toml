@@ -28,9 +28,9 @@ subject = "AgentGo"
 key = "replace-with-a-random-jwt-secret"
 
 [adminConfig]
-username = "admin"
-password = "replace-with-a-strong-admin-password"
-email = "admin@agentgo.local"
+username = "admin@qq.com"
+password = "admin"
+email = "admin@qq.com"
 
 [rabbitmqConfig]
 host = "127.0.0.1"

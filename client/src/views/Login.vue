@@ -24,18 +24,18 @@
             <div class="face-header">
               <p class="panel-kicker">SECURE ACCESS</p>
               <h2 class="panel-title">欢迎回到 AgentGo</h2>
-              <p class="panel-subtitle">登录后继续你的智能协作会话。</p>
+              <p class="panel-subtitle">使用注册邮箱登录后继续你的智能协作会话。</p>
             </div>
 
             <form class="auth-form" @submit.prevent="handleLogin">
               <label class="field">
-                <span class="field-label">用户名</span>
+                <span class="field-label">邮箱地址</span>
                 <input
-                  v-model="loginForm.username"
-                  type="text"
+                  v-model="loginForm.email"
+                  type="email"
                   class="field-input"
-                  placeholder="请输入用户名"
-                  autocomplete="username"
+                  placeholder="请输入注册邮箱"
+                  autocomplete="email"
                   required
                 />
               </label>
@@ -67,7 +67,7 @@
             <div class="face-header">
               <p class="panel-kicker">NEW ACCESS REQUEST</p>
               <h2 class="panel-title">创建你的 AgentGo 账号</h2>
-              <p class="panel-subtitle">注册成功后自动翻回登录，并使用邮件中的账号登录。</p>
+              <p class="panel-subtitle">注册成功后可直接使用当前邮箱登录。</p>
             </div>
 
             <form class="auth-form" @submit.prevent="handleRegister">
@@ -169,7 +169,7 @@ export default {
     let countdownTimer = null
 
     const loginForm = reactive({
-      username: '',
+      email: '',
       password: ''
     })
 
@@ -218,15 +218,21 @@ export default {
     }
 
     const handleLogin = async () => {
-      if (!loginForm.username || !loginForm.password) {
-        showToast('请输入用户名和密码', 'error')
+      if (!loginForm.email || !loginForm.password) {
+        showToast('请输入邮箱和密码', 'error')
+        return
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(loginForm.email)) {
+        showToast('请输入正确的邮箱格式', 'error')
         return
       }
 
       try {
         loginLoading.value = true
         const response = await api.post('/user/login', {
-          username: loginForm.username,
+          email: loginForm.email.trim(),
           password: loginForm.password
         })
 
@@ -234,9 +240,7 @@ export default {
           localStorage.setItem('token', response.data.token)
           localStorage.setItem('isAdmin', response.data.isAdmin ? 'true' : 'false')
           showToast('身份验证通过', 'success')
-          setTimeout(() => {
-            router.push('/menu')
-          }, 800)
+          router.replace('/ai-chat')
         } else {
           showToast(response.data.status_msg || '验证失败', 'error')
         }
@@ -297,16 +301,19 @@ export default {
       try {
         registerLoading.value = true
         const response = await api.post('/user/register', {
-          email: registerForm.email,
+          email: registerForm.email.trim(),
           captcha: registerForm.captcha,
           password: registerForm.password
         })
 
         if (response.data.status_code === 1000) {
-          showToast('注册成功，请查收邮箱中的账号后登录', 'success')
+          localStorage.setItem('token', response.data.token)
+          localStorage.setItem('isAdmin', response.data.isAdmin ? 'true' : 'false')
+          showToast('注册成功，已自动登录', 'success')
           resetRegisterForm()
           clearCountdown()
           switchMode(false)
+          router.replace('/ai-chat')
         } else {
           showToast(response.data.status_msg || '注册失败', 'error')
         }
@@ -704,5 +711,3 @@ export default {
   }
 }
 </style>
-
-

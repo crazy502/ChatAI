@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	defaultAdminUsername = "admin"
+	defaultAdminUsername = "admin@qq.com"
 	defaultAdminPassword = "admin"
-	defaultAdminEmail    = "admin@gopherai.local"
+	defaultAdminEmail    = "admin@qq.com"
 )
 
 type Service struct {
@@ -30,20 +30,22 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) Login(ctx context.Context, username, rawPassword string) (string, bool, error) {
-	userInfo, err := s.repo.GetByUsername(username)
+func (s *Service) Login(ctx context.Context, identifier, rawPassword string) (string, bool, error) {
+	email := normalizeEmail(identifier)
+
+	userInfo, err := s.repo.GetByEmail(email)
 	if err == gorm.ErrRecordNotFound {
 		return "", false, apperror.New(code.CodeUserNotExist, code.CodeUserNotExist.Msg()).
-			WithField("username", username)
+			WithField("email", email)
 	}
 	if err != nil {
-		return "", false, apperror.Wrap(code.CodeServerBusy, err, "query user failed").
-			WithField("username", username)
+		return "", false, apperror.Wrap(code.CodeServerBusy, err, "query user by email failed").
+			WithField("email", email)
 	}
 
 	if !password.CheckPassword(userInfo.Password, rawPassword) {
 		return "", false, apperror.New(code.CodeInvalidPassword, code.CodeInvalidPassword.Msg()).
-			WithField("username", username)
+			WithField("email", email)
 	}
 
 	token, err := jwt.GenerateToken(userInfo.ID, userInfo.Username, userInfo.IsAdmin)
@@ -56,6 +58,8 @@ func (s *Service) Login(ctx context.Context, username, rawPassword string) (stri
 }
 
 func (s *Service) Register(ctx context.Context, email, rawPassword, captcha string) (string, bool, error) {
+	email = normalizeEmail(email)
+
 	_, err := s.repo.GetByEmail(email)
 	if err == nil {
 		return "", false, apperror.New(code.CodeEmailExist, code.CodeEmailExist.Msg()).
@@ -76,7 +80,7 @@ func (s *Service) Register(ctx context.Context, email, rawPassword, captcha stri
 			WithField("email", email)
 	}
 
-	username := utils.GetRandomNumbers(11)
+	username := email
 	hashedPassword, err := password.HashPassword(rawPassword)
 	if err != nil {
 		return "", false, apperror.Wrap(code.CodeServerBusy, err, "generate password hash failed").
@@ -90,12 +94,6 @@ func (s *Service) Register(ctx context.Context, email, rawPassword, captcha stri
 			WithField("username", username)
 	}
 
-	if err := mail.SendCaptcha(email, username, mail.UserNameMsg); err != nil {
-		return "", false, apperror.Wrap(code.CodeServerBusy, err, "send username email failed").
-			WithField("email", email).
-			WithField("user_id", userInfo.ID)
-	}
-
 	token, err := jwt.GenerateToken(userInfo.ID, userInfo.Username, userInfo.IsAdmin)
 	if err != nil {
 		return "", false, apperror.Wrap(code.CodeServerBusy, err, "generate register token failed").
@@ -106,6 +104,8 @@ func (s *Service) Register(ctx context.Context, email, rawPassword, captcha stri
 }
 
 func (s *Service) SendCaptcha(ctx context.Context, email string) error {
+	email = normalizeEmail(email)
+
 	sendCode := utils.GetRandomNumbers(6)
 	if err := cache.SetCaptchaForEmail(email, sendCode); err != nil {
 		return apperror.Wrap(code.CodeServerBusy, err, "store captcha failed").
@@ -137,6 +137,7 @@ func (s *Service) EnsureConfiguredAdmin() error {
 	if adminEmail == "" {
 		adminEmail = defaultAdminEmail
 	}
+	adminEmail = normalizeEmail(adminEmail)
 
 	passwordHash, err := password.HashPassword(adminPassword)
 	if err != nil {
@@ -150,4 +151,8 @@ func (s *Service) EnsureConfiguredAdmin() error {
 	}
 
 	return nil
+}
+
+func normalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
 }

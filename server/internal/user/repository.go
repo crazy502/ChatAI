@@ -44,15 +44,18 @@ func (r *Repository) UpdatePassword(userID int64, passwordHash string) error {
 
 func (r *Repository) EnsureConfiguredAdmin(username, email, passwordHash string) error {
 	return db.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&User{}).
-			Where("username <> ?", username).
-			Update("is_admin", false).Error; err != nil {
-			return err
-		}
-
 		var adminUser User
 		err := tx.Where("username = ?", username).First(&adminUser).Error
 		if err == gorm.ErrRecordNotFound {
+			err = tx.Where("email = ?", email).First(&adminUser).Error
+		}
+		if err == gorm.ErrRecordNotFound {
+			if err := tx.Model(&User{}).
+				Where("username <> ?", username).
+				Update("is_admin", false).Error; err != nil {
+				return err
+			}
+
 			return tx.Create(&User{
 				Email:    email,
 				Name:     username,
@@ -65,18 +68,47 @@ func (r *Repository) EnsureConfiguredAdmin(username, email, passwordHash string)
 			return err
 		}
 
+		previousUsername := adminUser.Username
+
+		if err := tx.Model(&User{}).
+			Where("id <> ?", adminUser.ID).
+			Update("is_admin", false).Error; err != nil {
+			return err
+		}
+
 		updates := map[string]interface{}{
 			"is_admin": true,
 			"name":     username,
+			"username": username,
 			"password": passwordHash,
 		}
 		if adminUser.Email == "" || adminUser.Email != email {
 			updates["email"] = email
 		}
 
-		return tx.Model(&User{}).
+		if err := tx.Model(&User{}).
 			Where("id = ?", adminUser.ID).
 			Updates(updates).
-			Error
+			Error; err != nil {
+			return err
+		}
+
+		if previousUsername != "" && previousUsername != username {
+			if err := tx.Table("sessions").
+				Where("user_name = ?", previousUsername).
+				Update("user_name", username).
+				Error; err != nil {
+				return err
+			}
+
+			if err := tx.Table("messages").
+				Where("user_name = ?", previousUsername).
+				Update("user_name", username).
+				Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 }

@@ -8,9 +8,9 @@ import (
 
 type User struct {
 	ID        int64          `gorm:"primaryKey" json:"id"`
-	Name      string         `gorm:"type:varchar(50)" json:"name"`
-	Email     string         `gorm:"type:varchar(100);index" json:"email"`
-	Username  string         `gorm:"type:varchar(50);uniqueIndex" json:"username"`
+	Name      string         `gorm:"type:varchar(100)" json:"name"`
+	Email     string         `gorm:"type:varchar(100);uniqueIndex" json:"email"`
+	Username  string         `gorm:"type:varchar(100);uniqueIndex" json:"username"`
 	Password  string         `gorm:"type:varchar(255)" json:"-"`
 	IsAdmin   bool           `gorm:"not null;default:false;index" json:"is_admin"`
 	CreatedAt time.Time      `json:"created_at"`

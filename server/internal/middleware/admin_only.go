@@ -15,7 +15,7 @@ func RequireAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		adminUsername := strings.TrimSpace(config.GetConfig().AdminConfig.Username)
 		if adminUsername == "" {
-			adminUsername = "admin"
+			adminUsername = "admin@qq.com"
 		}
 
 		if !c.GetBool("isAdmin") || c.GetString("userName") != adminUsername {

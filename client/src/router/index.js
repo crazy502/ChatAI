@@ -2,14 +2,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { isAdminToken } from '../utils/auth'
 
 const Login = () => import(/* webpackChunkName: "auth" */ '../views/Login.vue')
-const Menu = () => import(/* webpackChunkName: "menu" */ '../views/Menu.vue')
 const AIChat = () => import(/* webpackChunkName: "chat" */ '../views/AIChat.vue')
 const AdminMetrics = () => import(/* webpackChunkName: "admin" */ '../views/AdminMetrics.vue')
 
 const routes = [
   {
     path: '/',
-    redirect: '/login'
+    redirect: () => (localStorage.getItem('token') ? '/ai-chat' : '/login')
   },
   {
     path: '/login',
@@ -23,12 +22,7 @@ const routes = [
   },
   {
     path: '/menu',
-    name: 'Menu',
-    component: Menu,
-    meta: {
-      requiresAuth: true,
-      title: 'AgentGo | 控制台'
-    }
+    redirect: '/ai-chat'
   },
   {
     path: '/ai-chat',
@@ -62,13 +56,18 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
 
+  if (token && (to.path === '/login' || to.path === '/register')) {
+    next('/ai-chat')
+    return
+  }
+
   if (to.matched.some((record) => record.meta.requiresAuth) && !token) {
     next('/login')
     return
   }
 
   if (to.matched.some((record) => record.meta.requiresAdmin) && !isAdminToken(token)) {
-    next('/menu')
+    next('/ai-chat')
     return
   }
 
