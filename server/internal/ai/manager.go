@@ -114,8 +114,8 @@ func (h *Helper) GetModelType() string {
 }
 
 type Manager struct {
-	helpers map[string]map[string]*Helper
-	mu      sync.RWMutex
+	helpers map[string]map[string]*Helper // 用户会话ID到助手的映射
+	mu      sync.RWMutex                  // 读写锁，用于保护助手映射
 }
 
 func NewManager() *Manager {
