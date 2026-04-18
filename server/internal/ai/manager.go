@@ -11,11 +11,11 @@ import (
 type SaveFunc func(*StoredMessage) error
 
 type Helper struct {
-	provider  Provider
-	messages  []PromptMessage
-	mu        sync.RWMutex
-	SessionID string
-	saveFunc  SaveFunc
+	provider  Provider        // 模型提供方
+	messages  []PromptMessage // 消息队列
+	mu        sync.RWMutex    // 读写锁，用于保护消息队列
+	SessionID string          // 会话ID
+	saveFunc  SaveFunc        // 保存消息函数
 }
 
 func NewHelper(provider Provider, sessionID string) *Helper {
