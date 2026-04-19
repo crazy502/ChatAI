@@ -25,6 +25,9 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
+// ListByUserName 根据用户名称和关键词查询会话列表
+// includeArchived: 是否包含已归档会话
+// return: 会话信息列表
 func (s *Service) ListByUserName(ctx context.Context, userName, keyword string, includeArchived bool) ([]SessionInfo, error) {
 	sessions, err := s.repo.ListByUserName(userName, keyword, includeArchived)
 	if err != nil {
@@ -80,6 +83,9 @@ func (s *Service) SetPinned(ctx context.Context, userName, sessionID string, pin
 	return nil
 }
 
+// SetArchived 设置会话归档状态
+// archived: 是否归档
+// return: 错误
 func (s *Service) SetArchived(ctx context.Context, userName, sessionID string, archived bool) error {
 	if _, err := s.loadOwnedSession(ctx, userName, sessionID); err != nil {
 		return err

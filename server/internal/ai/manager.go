@@ -36,22 +36,34 @@ func (h *Helper) HasMessages() bool {
 	return len(h.messages) > 0
 }
 
+// ReplaceMessages 替换助手队列中的消息
+// history: 历史消息队列
 func (h *Helper) ReplaceMessages(history []StoredMessage) {
+	//1. 加锁并替换消息队列
 	h.mu.Lock()
+	//2. 解锁
 	defer h.mu.Unlock()
+	//3. 替换消息队列
 	h.messages = ToPromptMessages(history)
 }
 
+// AddMessage 添加消息到助手队列
+// return: 消息实例
+// err: 错误
 func (h *Helper) AddMessage(content, userName string, isUser, save bool) (*StoredMessage, error) {
+	//1. 创建消息实例
 	message := NewStoredMessage(h.SessionID, userName, content, isUser)
 
+	//2. 加锁并添加消息到队列
 	h.mu.Lock()
 	h.messages = append(h.messages, PromptMessage{
 		Content: content,
 		IsUser:  isUser,
 	})
+	//3. 解锁
 	h.mu.Unlock()
 
+	//4. 保存消息
 	if save && h.saveFunc != nil {
 		if err := h.saveFunc(message); err != nil {
 			return nil, err
@@ -128,22 +140,26 @@ func (m *Manager) GetOrCreateHelper(userName, sessionID, modelType string, confi
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	//1. 检查用户的Helper映射是否存在
 	userHelpers, exists := m.helpers[userName]
 	if !exists {
 		userHelpers = make(map[string]*Helper)
 		m.helpers[userName] = userHelpers
 	}
 
+	//2. 检查会话的Helper实例是否存在且模型类型匹配
 	helper, exists := userHelpers[sessionID]
 	if exists && helper.GetModelType() == modelType {
 		return helper, nil
 	}
 
+	//3. 创建新的模型提供者实例
 	provider, err := GetGlobalFactory().CreateProvider(context.Background(), modelType, config)
 	if err != nil {
 		return nil, err
 	}
 
+	//4. 创建并缓存新的Helper实例
 	helper = NewHelper(provider, sessionID)
 	userHelpers[sessionID] = helper
 	return helper, nil
@@ -169,6 +185,8 @@ var (
 	managerOnce   sync.Once
 )
 
+// GetGlobalManager 获取全局助手管理器
+// return: 全局助手管理器实例
 func GetGlobalManager() *Manager {
 	managerOnce.Do(func() {
 		globalManager = NewManager()

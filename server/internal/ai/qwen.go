@@ -48,13 +48,21 @@ func (p *QwenProvider) GenerateResponse(ctx context.Context, messages []*schema.
 	return resp, nil
 }
 
+// StreamResponse 流式响应
+// ctx: 上下文
+// messages: 消息队列
+// cb: 流式回调函数
+// return: 流式响应
+// err: 错误
 func (p *QwenProvider) StreamResponse(ctx context.Context, messages []*schema.Message, cb StreamCallback) (string, error) {
+	//1. 创建流式响应
 	stream, err := p.llm.Stream(ctx, messages)
 	if err != nil {
 		return "", fmt.Errorf("qwen stream failed: %v", err)
 	}
 	defer stream.Close()
 
+	//2. 处理流式响应
 	var fullResp strings.Builder
 
 	for {
@@ -69,7 +77,9 @@ func (p *QwenProvider) StreamResponse(ctx context.Context, messages []*schema.Me
 			continue
 		}
 
+		//3. 累加流式响应
 		fullResp.WriteString(msg.Content)
+		//4. 调用流式回调函数
 		cb(msg.Content)
 	}
 

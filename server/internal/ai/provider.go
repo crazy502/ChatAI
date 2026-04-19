@@ -9,8 +9,16 @@ import (
 )
 
 type Provider interface {
+	// GenerateResponse 生成模型响应
+	// messages: 输入的消息队列
+	// return: 模型响应消息
 	GenerateResponse(ctx context.Context, messages []*schema.Message) (*schema.Message, error)
+	// StreamResponse 流式生成模型响应
+	// messages: 输入的消息队列
+	// cb: 流式回调回调函数
+	// return: 流式响应字符串
 	StreamResponse(ctx context.Context, messages []*schema.Message, cb StreamCallback) (string, error)
+	// Name 模型提供者名称
 	Name() string
 }
 

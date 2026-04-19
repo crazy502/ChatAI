@@ -72,12 +72,21 @@ func consumeMessage(msg *amqp.Delivery, repo *Repository) error {
 	return nil
 }
 
+// saveWithQueue 保存消息到队列或直接插入数据库
+// repo: 消息仓库
+// message: 消息实例
+// return: 错误
+// err: 错误
 func saveWithQueue(repo *Repository, message *ai.StoredMessage) error {
+	//1. 序列化消息
 	data, err := marshalMessagePayload(message)
+	//2. 发布消息到队列
 	if err == nil && mq.RMQMessage != nil {
+		//3. 发布消息到队列
 		if publishErr := mq.RMQMessage.Publish(data); publishErr == nil {
 			return nil
 		} else {
+			//4. 发布消息到队列失败，回退到直接插入数据库
 			observe.Warn(context.Background(), "rabbitmq publish failed, fallback to direct db insert", "cause", publishErr.Error(), "session_id", message.SessionID)
 		}
 	}

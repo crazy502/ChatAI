@@ -31,16 +31,19 @@ func NewService(repo *Repository, sessionRepo *sessionpkg.Repository) *Service {
 }
 
 func (s *Service) CreateSessionAndSendMessage(ctx context.Context, userName, userQuestion, modelType string) (string, string, error) {
+	//1. 创建会话
 	createdSession, ctx, err := s.createSession(ctx, userName, userQuestion)
 	if err != nil {
 		return "", "", err
 	}
 
+	//2. 获取或创建助手实例
 	helper, err := s.getOrCreateHydratedHelper(ctx, userName, createdSession.ID, modelType)
 	if err != nil {
 		return "", "", err
 	}
 
+	//3. 生成AI响应
 	aiResponse, err := helper.GenerateResponse(userName, ctx, userQuestion)
 	if err != nil {
 		return "", "", apperror.Wrap(code.AIModelFail, err, "generate chat response failed").
@@ -48,6 +51,7 @@ func (s *Service) CreateSessionAndSendMessage(ctx context.Context, userName, use
 			WithField("model_type", modelType)
 	}
 
+	//4. 触发会话活动更新
 	s.touchSessionActivity(ctx, createdSession.ID)
 	return createdSession.ID, aiResponse.Content, nil
 }
@@ -62,18 +66,21 @@ func (s *Service) CreateStreamSessionOnly(ctx context.Context, userName, userQue
 }
 
 func (s *Service) StreamMessageToExistingSession(ctx context.Context, userName, sessionID, userQuestion, modelType string, writer http.ResponseWriter) error {
+	//1. 检查是否支持流式响应
 	flusher, ok := writer.(http.Flusher)
 	if !ok {
 		return apperror.New(code.CodeServerBusy, "streaming response is not supported").
 			WithField("session_id", sessionID)
 	}
 
+	//2. 加载会话
 	ctx = requestmeta.WithField(ctx, requestmeta.FieldSessionID, sessionID)
-
+	//3. 加载助手实例
 	if _, err := s.loadOwnedSession(ctx, userName, sessionID); err != nil {
 		return err
 	}
 
+	//4. 写入流式响应事件：ready
 	if err := writeSSEJSON(writer, flusher, map[string]bool{"ready": true}); err != nil {
 		return apperror.Wrap(code.CodeServerBusy, err, "write stream ready event failed").
 			WithField("session_id", sessionID)
@@ -105,18 +112,25 @@ func (s *Service) StreamMessageToExistingSession(ctx context.Context, userName, 
 	return nil
 }
 
+// ChatSend 发送聊天消息
+// return: 响应内容
+// err: 错误
 func (s *Service) ChatSend(ctx context.Context, userName, sessionID, userQuestion, modelType string) (string, error) {
+	//1. 加载会话
 	ctx = requestmeta.WithField(ctx, requestmeta.FieldSessionID, sessionID)
 
+	//2. 加载助手实例
 	if _, err := s.loadOwnedSession(ctx, userName, sessionID); err != nil {
 		return "", err
 	}
 
+	//3. 获取或创建助手实例
 	helper, err := s.getOrCreateHydratedHelper(ctx, userName, sessionID, modelType)
 	if err != nil {
 		return "", err
 	}
 
+	//4. 生成AI响应
 	aiResponse, err := helper.GenerateResponse(userName, ctx, userQuestion)
 	if err != nil {
 		return "", apperror.Wrap(code.AIModelFail, err, "generate chat response failed").
@@ -174,6 +188,7 @@ func (s *Service) createSession(ctx context.Context, userName, userQuestion stri
 }
 
 func (s *Service) getOrCreateHydratedHelper(ctx context.Context, userName, sessionID, modelType string) (*ai.Helper, error) {
+	//1. 创建或获取助手实例
 	helper, err := ai.GetGlobalManager().GetOrCreateHelper(userName, sessionID, modelType, map[string]interface{}{})
 	if err != nil {
 		return nil, mapModelFactoryError(err).
@@ -181,10 +196,12 @@ func (s *Service) getOrCreateHydratedHelper(ctx context.Context, userName, sessi
 			WithField("model_type", modelType)
 	}
 
+	//2. 设置消息保存函数
 	helper.SetSaveFunc(func(message *ai.StoredMessage) error {
 		return saveWithQueue(s.repo, message)
 	})
 
+	//3. 加载历史消息（如果需要）
 	if helper.HasMessages() {
 		return helper, nil
 	}
@@ -218,6 +235,8 @@ func (s *Service) loadOwnedSession(ctx context.Context, userName, sessionID stri
 	return sessionInfo, nil
 }
 
+// touchSessionActivity 触发会话活动更新
+// return: 错误
 func (s *Service) touchSessionActivity(ctx context.Context, sessionID string) {
 	if err := s.sessionRepo.TouchSession(sessionID, time.Now()); err != nil {
 		observe.Error(ctx, "touch session activity failed", apperror.Wrap(code.CodeServerBusy, err, "touch session activity failed").
