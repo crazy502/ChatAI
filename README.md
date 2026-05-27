@@ -28,7 +28,7 @@
 
 后台管理系统界面演示
 
-![后台管理系统](./document/resource/后台管理系统.png)
+![后台管理系统](./document/resource/对话界面.png)
 
 
 #### 前端聊天系统
