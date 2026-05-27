@@ -8,19 +8,24 @@ import (
 )
 
 const (
-	FieldRequestID = "request_id"
-	FieldUserID    = "user_id"
-	FieldUserName  = "user_name"
-	FieldSessionID = "session_id"
-	FieldIsAdmin   = "is_admin"
+	FieldRequestID = "request_id" // 请求ID
+	FieldUserID    = "user_id"    // 用户ID
+	FieldUserName  = "user_name"  // 用户名
+	FieldSessionID = "session_id" // 会话ID
+	FieldIsAdmin   = "is_admin"   // 是否管理员
 )
 
+// fieldsKey 上下文字段键
 type fieldsKey struct{}
 
+// Fields 上下文字段映射
 type Fields map[string]any
 
+// WithField 添加上下文字段
 func WithField(ctx context.Context, key string, value any) context.Context {
+	//1. 检查上下文是否为空
 	if ctx == nil {
+		//2. 如果上下文为空，创建一个新的上下文
 		ctx = context.Background()
 	}
 

@@ -38,11 +38,14 @@ func SetCaptchaForEmail(email, captcha string) error {
 	return Rdb.Set(ctx, key, captcha, 2*time.Minute).Err()
 }
 
+// CheckCaptchaForEmail 检查邮箱验证码
 func CheckCaptchaForEmail(email, userInput string) (bool, error) {
+	// 1. 从缓存中获取验证码
 	key := generateCaptchaKey(email)
-
+	// 2. 检查验证码是否存在
 	storedCaptcha, err := Rdb.Get(ctx, key).Result()
 	if err != nil {
+		// 3. 检查错误是否为Nil，即验证码不存在
 		if err == redis.Nil {
 			return false, nil
 		}

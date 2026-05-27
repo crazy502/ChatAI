@@ -106,12 +106,15 @@ func (s *Service) Register(ctx context.Context, email, rawPassword, captcha stri
 func (s *Service) SendCaptcha(ctx context.Context, email string) error {
 	email = normalizeEmail(email)
 
+	// 1. 生成随机验证码
 	sendCode := utils.GetRandomNumbers(6)
+	// 2. 存储验证码到缓存
 	if err := cache.SetCaptchaForEmail(email, sendCode); err != nil {
 		return apperror.Wrap(code.CodeServerBusy, err, "store captcha failed").
 			WithField("email", email)
 	}
 
+	// 3. 发送验证码到邮箱
 	if err := mail.SendCaptcha(email, sendCode, mail.CodeMsg); err != nil {
 		return apperror.Wrap(code.CodeServerBusy, err, "send captcha email failed").
 			WithField("email", email)
@@ -153,11 +156,15 @@ func (s *Service) EnsureConfiguredAdmin() error {
 	return nil
 }
 
+// normalizeEmail 规范化邮箱地址
 func normalizeEmail(email string) string {
+	// 1. 转换为小写并移除首尾空格
 	email = strings.ToLower(strings.TrimSpace(email))
+	// 2. 检查邮箱是否为空
 	if email == "" {
 		return ""
 	}
+	// 3. 检查邮箱是否包含@符号
 	if !strings.Contains(email, "@") {
 		return email + "@qq.com"
 	}

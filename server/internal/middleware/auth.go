@@ -12,13 +12,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Auth 认证中间件
 func Auth() gin.HandlerFunc {
+	//1. 从请求头中获取JWT令牌
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		token := ""
 		if strings.HasPrefix(authHeader, "Bearer ") {
 			token = strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 		}
+		//2. 检查JWT令牌是否为空
 		if token == "" {
 			response.Fail(c, apperror.New(code.CodeInvalidToken, code.CodeInvalidToken.Msg()))
 			c.Abort()
