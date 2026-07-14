@@ -37,7 +37,7 @@ func TestLoginUsesEmailField(t *testing.T) {
 	router.POST("/login", handler.Login)
 
 	body, _ := json.Marshal(map[string]string{
-		"email":    "User@Example.com",
+		"email":    "User@qq.com",
 		"password": "secret",
 	})
 
@@ -47,7 +47,7 @@ func TestLoginUsesEmailField(t *testing.T) {
 
 	router.ServeHTTP(recorder, req)
 
-	if service.loginIdentifier != "User@Example.com" {
+	if service.loginIdentifier != "User@qq.com" {
 		t.Fatalf("unexpected login identifier: got %q", service.loginIdentifier)
 	}
 }

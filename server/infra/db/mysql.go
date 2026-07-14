@@ -82,6 +82,33 @@ func HasReplica() bool {
 	return DB != nil && readDB != nil && DB != readDB
 }
 
+func Close() error {
+	var firstErr error
+	closed := make(map[*sql.DB]struct{}, 2)
+	for _, instance := range []*gorm.DB{readDB, DB} {
+		if instance == nil {
+			continue
+		}
+		sqlDB, err := instance.DB()
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		if _, exists := closed[sqlDB]; exists {
+			continue
+		}
+		closed[sqlDB] = struct{}{}
+		if err := sqlDB.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	DB = nil
+	readDB = nil
+	return firstErr
+}
+
 func Migrate(models ...any) error {
 	return Writer().AutoMigrate(models...)
 }

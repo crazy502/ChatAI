@@ -16,6 +16,7 @@ const (
 	CodeRecordNotFound   Code = 2009
 	CodeIllegalPassword  Code = 2010
 	CodeEmailExist       Code = 2011
+	CodeTooManyRequests  Code = 2012
 
 	CodeForbidden Code = 3001
 
@@ -39,6 +40,7 @@ var msg = map[Code]string{
 	CodeRecordNotFound:   "\u8bb0\u5f55\u4e0d\u5b58\u5728",
 	CodeIllegalPassword:  "\u5bc6\u7801\u4e0d\u5408\u6cd5",
 	CodeEmailExist:       "\u90ae\u7bb1\u5df2\u5b58\u5728",
+	CodeTooManyRequests:  "\u8bf7\u6c42\u8fc7\u4e8e\u9891\u7e41\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5",
 	CodeForbidden:        "\u6743\u9650\u4e0d\u8db3",
 	CodeServerBusy:       "\u670d\u52a1\u7e41\u5fd9\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5",
 	AIModelNotFind:       "\u6a21\u578b\u4e0d\u5b58\u5728",

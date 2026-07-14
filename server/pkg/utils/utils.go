@@ -1,21 +1,27 @@
 package utils
 
 import (
-	"math/rand"
-	"strconv"
-	"time"
+	"crypto/rand"
+	"errors"
+	"math/big"
 
 	"github.com/google/uuid"
 )
 
-func GetRandomNumbers(num int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	code := ""
-	for i := 0; i < num; i++ {
-		code += strconv.Itoa(r.Intn(10))
+func GetRandomNumbers(length int) (string, error) {
+	if length <= 0 {
+		return "", errors.New("random number length must be positive")
 	}
-	return code
+
+	digits := make([]byte, length)
+	for index := range digits {
+		value, err := rand.Int(rand.Reader, big.NewInt(10))
+		if err != nil {
+			return "", err
+		}
+		digits[index] = byte(value.Int64()) + '0'
+	}
+	return string(digits), nil
 }
 
 func GenerateUUID() string {

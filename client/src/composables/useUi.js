@@ -1,21 +1,34 @@
 ﻿import { reactive, readonly } from 'vue'
 
+import { translate } from '../i18n'
+
 const createDefaultConfirmState = () => ({
   visible: false,
   title: '',
   message: '',
-  confirmText: '确认',
-  cancelText: '取消',
+  confirmText: translate('common.confirm'),
+  cancelText: translate('common.cancel'),
   intent: 'primary'
+})
+
+const createDefaultInputState = () => ({
+  visible: false,
+  title: '',
+  placeholder: '',
+  defaultValue: '',
+  confirmText: translate('common.confirm'),
+  cancelText: translate('common.cancel')
 })
 
 const state = reactive({
   toasts: [],
-  confirmDialog: createDefaultConfirmState()
+  confirmDialog: createDefaultConfirmState(),
+  inputDialog: createDefaultInputState()
 })
 
 let toastSeed = 0
 let confirmResolver = null
+let inputResolver = null
 
 const removeToast = (toastId) => {
   const toastIndex = state.toasts.findIndex((toast) => toast.id === toastId)
@@ -69,14 +82,43 @@ const confirmAction = (options = {}) => {
   })
 }
 
+const resetInputDialog = () => {
+  Object.assign(state.inputDialog, createDefaultInputState())
+}
+
+const resolveInput = (value) => {
+  const resolver = inputResolver
+  inputResolver = null
+  resetInputDialog()
+  resolver?.(value)
+}
+
+const promptAction = (options = {}) => {
+  if (inputResolver) {
+    inputResolver(null)
+  }
+
+  Object.assign(state.inputDialog, createDefaultInputState(), {
+    visible: true,
+    ...options
+  })
+
+  return new Promise((resolve) => {
+    inputResolver = resolve
+  })
+}
+
 export function useUi() {
   return {
     uiState: readonly(state),
     showToast,
     removeToast,
     confirmAction,
+	promptAction,
     acceptConfirm: () => resolveConfirm(true),
-    cancelConfirm: () => resolveConfirm(false)
+	cancelConfirm: () => resolveConfirm(false),
+	acceptInput: (value) => resolveInput(value),
+	cancelInput: () => resolveInput(null)
   }
 }
 

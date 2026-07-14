@@ -21,8 +21,8 @@ type errorEnvelope struct {
 	StatusCode int64  `json:"status_code"`
 	RequestID  string `json:"request_id"`
 	Error      struct {
-		Code  int64 `json:"code"`
-		Stack []any `json:"stack"`
+		Code    int64  `json:"code"`
+		Message string `json:"message"`
 	} `json:"error"`
 }
 
@@ -69,8 +69,8 @@ func TestRecoveryReturnsStructuredError(t *testing.T) {
 
 	router.ServeHTTP(recorder, req)
 
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("unexpected http status: got %d want %d", recorder.Code, http.StatusOK)
+	if recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("unexpected http status: got %d want %d", recorder.Code, http.StatusInternalServerError)
 	}
 
 	var payload errorEnvelope
@@ -90,7 +90,22 @@ func TestRecoveryReturnsStructuredError(t *testing.T) {
 		t.Fatalf("unexpected error code: got %d want %d", payload.Error.Code, code.CodeServerBusy.Code())
 	}
 
-	if len(payload.Error.Stack) == 0 {
-		t.Fatal("expected stack frames in error payload")
+	if payload.Error.Message != code.CodeServerBusy.Msg() {
+		t.Fatalf("unexpected public error message: got %q want %q", payload.Error.Message, code.CodeServerBusy.Msg())
+	}
+
+	var rawPayload map[string]any
+	if err := json.Unmarshal(recorder.Body.Bytes(), &rawPayload); err != nil {
+		t.Fatalf("unmarshal raw response: %v", err)
+	}
+	errorDetail, ok := rawPayload["error"].(map[string]any)
+	if !ok {
+		t.Fatal("expected error detail")
+	}
+	if _, exists := errorDetail["stack"]; exists {
+		t.Fatal("stack must not be exposed in public error payload")
+	}
+	if _, exists := errorDetail["fields"]; exists {
+		t.Fatal("internal fields must not be exposed in public error payload")
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"server/infra/config"
 	"server/pkg/observe"
@@ -60,6 +61,7 @@ type RabbitMQ struct {
 	Exchange string
 	Key      string
 	mu       sync.Mutex
+	confirms <-chan amqp.Confirmation
 }
 
 func NewRabbitMQ(exchange, key string) *RabbitMQ {
@@ -94,6 +96,11 @@ func NewWorkRabbitMQ(queue string) (*RabbitMQ, error) {
 		return nil, fmt.Errorf("rabbitmq create channel failed: %w", err)
 	}
 	rabbitMQ.channel = channel
+	if err := channel.Confirm(false); err != nil {
+		_ = channel.Close()
+		return nil, fmt.Errorf("rabbitmq enable publisher confirms: %w", err)
+	}
+	rabbitMQ.confirms = channel.NotifyPublish(make(chan amqp.Confirmation, 1))
 
 	return rabbitMQ, nil
 }
@@ -121,7 +128,7 @@ func (r *RabbitMQ) Publish(message []byte) error {
 		return err
 	}
 
-	return r.channel.Publish(
+	if err := r.channel.Publish(
 		r.Exchange,
 		r.Key,
 		false,
@@ -131,7 +138,22 @@ func (r *RabbitMQ) Publish(message []byte) error {
 			Body:         message,
 			DeliveryMode: amqp.Persistent,
 		},
-	)
+	); err != nil {
+		return err
+	}
+
+	select {
+	case confirmation, ok := <-r.confirms:
+		if !ok {
+			return errors.New("rabbitmq publisher confirmation channel closed")
+		}
+		if !confirmation.Ack {
+			return fmt.Errorf("rabbitmq rejected published message %d", confirmation.DeliveryTag)
+		}
+		return nil
+	case <-time.After(5 * time.Second):
+		return errors.New("rabbitmq publisher confirmation timed out")
+	}
 }
 
 func (r *RabbitMQ) Consume(handle func(msg *amqp.Delivery) error) {

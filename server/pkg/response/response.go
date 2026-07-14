@@ -1,7 +1,6 @@
 package response
 
 import (
-	"fmt"
 	"net/http"
 
 	"server/infra/metrics"
@@ -14,10 +13,8 @@ import (
 )
 
 type ErrorDetail struct {
-	Code    int64             `json:"code"`
-	Message string            `json:"message"`
-	Stack   []apperror.Frame  `json:"stack,omitempty"`
-	Fields  map[string]string `json:"fields,omitempty"`
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
 }
 
 type Response struct {
@@ -85,7 +82,7 @@ func Fail(c *gin.Context, err error) {
 		RequestID:  RequestID(c),
 		Error:      buildErrorDetail(appErr),
 	}
-	c.JSON(http.StatusOK, res)
+	c.JSON(httpStatus(appErr.Code), res)
 }
 
 func SSEError(c *gin.Context, err error) {
@@ -135,26 +132,27 @@ func buildErrorDetail(err error) *ErrorDetail {
 		return nil
 	}
 
-	fields := apperror.FieldsOf(appErr)
-	stringFields := make(map[string]string, len(fields))
-	for key, value := range fields {
-		if value == nil {
-			continue
-		}
-		stringFields[key] = RequestValue(value)
-	}
-	if len(stringFields) == 0 {
-		stringFields = nil
-	}
-
 	return &ErrorDetail{
 		Code:    appErr.Code.Code(),
-		Message: appErr.Message,
-		Stack:   apperror.StackOf(appErr),
-		Fields:  stringFields,
+		Message: appErr.Code.Msg(),
 	}
 }
 
-func RequestValue(value any) string {
-	return fmt.Sprintf("%v", value)
+func httpStatus(resultCode code.Code) int {
+	switch resultCode {
+	case code.CodeInvalidToken, code.CodeNotLogin:
+		return http.StatusUnauthorized
+	case code.CodeForbidden:
+		return http.StatusForbidden
+	case code.CodeRecordNotFound, code.CodeUserNotExist, code.AIModelNotFind:
+		return http.StatusNotFound
+	case code.CodeUserExist, code.CodeEmailExist:
+		return http.StatusConflict
+	case code.CodeTooManyRequests:
+		return http.StatusTooManyRequests
+	case code.CodeServerBusy, code.AIModelCannotOpen, code.AIModelFail:
+		return http.StatusInternalServerError
+	default:
+		return http.StatusBadRequest
+	}
 }

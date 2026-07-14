@@ -2,6 +2,7 @@
 appName = "AgentGo"
 host = "0.0.0.0"
 port = 9090
+environment = "development"
 
 [emailConfig]
 authcode = "your-qq-mail-auth-code"
@@ -43,14 +44,14 @@ connMaxLifetimeMinutes = 60
 connMaxIdleTimeMinutes = 10
 
 [jwtConfig]
-expire_duration = 8760
+expire_duration = 2
 issuer = "AgentGo"
 subject = "AgentGo"
-key = "replace-with-a-random-jwt-secret"
+key = "replace-locally-or-set-JWT_SECRET"
 
 [adminConfig]
 username = "admin@qq.com"
-password = "admin"
+password = ""
 email = "admin@qq.com"
 
 [rabbitmqConfig]

@@ -1,6 +1,8 @@
 package user
 
 import (
+	"errors"
+
 	"server/infra/db"
 
 	"gorm.io/gorm"
@@ -56,6 +58,9 @@ func (r *Repository) EnsureConfiguredAdmin(username, email, passwordHash string)
 			err = tx.Where("email = ?", email).First(&adminUser).Error
 		}
 		if err == gorm.ErrRecordNotFound {
+			if passwordHash == "" {
+				return errors.New("admin password is required when creating the initial administrator")
+			}
 			if err := tx.Model(&User{}).
 				Where("username <> ?", username).
 				Update("is_admin", false).Error; err != nil {
@@ -86,7 +91,6 @@ func (r *Repository) EnsureConfiguredAdmin(username, email, passwordHash string)
 			"is_admin": true,
 			"name":     username,
 			"username": username,
-			"password": passwordHash,
 		}
 		if adminUser.Email == "" || adminUser.Email != email {
 			updates["email"] = email

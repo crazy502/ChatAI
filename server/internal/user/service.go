@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"strings"
+	"time"
 
 	"server/infra/cache"
 	"server/infra/config"
@@ -18,7 +19,6 @@ import (
 
 const (
 	defaultAdminUsername = "admin@qq.com"
-	defaultAdminPassword = "admin"
 	defaultAdminEmail    = "admin@qq.com"
 )
 
@@ -32,6 +32,9 @@ func NewService(repo *Repository) *Service {
 
 func (s *Service) Login(ctx context.Context, identifier, rawPassword string) (string, bool, error) {
 	email := normalizeEmail(identifier)
+	if err := checkIdentityRateLimit(ctx, "login-email", email, 10, 15*time.Minute); err != nil {
+		return "", false, err
+	}
 
 	userInfo, err := s.repo.GetByEmail(email)
 	if err == gorm.ErrRecordNotFound {
@@ -47,6 +50,7 @@ func (s *Service) Login(ctx context.Context, identifier, rawPassword string) (st
 		return "", false, apperror.New(code.CodeInvalidPassword, code.CodeInvalidPassword.Msg()).
 			WithField("email", email)
 	}
+	_ = cache.ResetRateLimit(ctx, "login-email", email)
 
 	token, err := jwt.GenerateToken(userInfo.ID, userInfo.Username, userInfo.IsAdmin)
 	if err != nil {
@@ -59,6 +63,9 @@ func (s *Service) Login(ctx context.Context, identifier, rawPassword string) (st
 
 func (s *Service) Register(ctx context.Context, email, rawPassword, captcha string) (string, bool, error) {
 	email = normalizeEmail(email)
+	if err := checkIdentityRateLimit(ctx, "register-email", email, 5, time.Hour); err != nil {
+		return "", false, err
+	}
 
 	_, err := s.repo.GetByEmailConsistent(email)
 	if err == nil {
@@ -105,9 +112,16 @@ func (s *Service) Register(ctx context.Context, email, rawPassword, captcha stri
 
 func (s *Service) SendCaptcha(ctx context.Context, email string) error {
 	email = normalizeEmail(email)
+	if err := checkIdentityRateLimit(ctx, "captcha-email", email, 3, 10*time.Minute); err != nil {
+		return err
+	}
 
 	// 1. 生成随机验证码
-	sendCode := utils.GetRandomNumbers(6)
+	sendCode, err := utils.GetRandomNumbers(6)
+	if err != nil {
+		return apperror.Wrap(code.CodeServerBusy, err, "generate captcha failed").
+			WithField("email", email)
+	}
 	// 2. 存储验证码到缓存
 	if err := cache.SetCaptchaForEmail(email, sendCode); err != nil {
 		return apperror.Wrap(code.CodeServerBusy, err, "store captcha failed").
@@ -132,19 +146,19 @@ func (s *Service) EnsureConfiguredAdmin() error {
 	}
 
 	adminPassword := strings.TrimSpace(cfg.AdminConfig.Password)
-	if adminPassword == "" {
-		adminPassword = defaultAdminPassword
-	}
-
 	adminEmail := strings.TrimSpace(cfg.AdminConfig.Email)
 	if adminEmail == "" {
 		adminEmail = defaultAdminEmail
 	}
 	adminEmail = normalizeEmail(adminEmail)
 
-	passwordHash, err := password.HashPassword(adminPassword)
-	if err != nil {
-		return apperror.Wrap(code.CodeServerBusy, err, "initialize admin password hash failed")
+	passwordHash := ""
+	if adminPassword != "" {
+		hashed, err := password.HashPassword(adminPassword)
+		if err != nil {
+			return apperror.Wrap(code.CodeServerBusy, err, "initialize admin password hash failed")
+		}
+		passwordHash = hashed
 	}
 
 	if err := s.repo.EnsureConfiguredAdmin(adminUsername, adminEmail, passwordHash); err != nil {
@@ -169,4 +183,15 @@ func normalizeEmail(email string) string {
 		return email + "@qq.com"
 	}
 	return email
+}
+
+func checkIdentityRateLimit(ctx context.Context, namespace, identity string, limit int64, window time.Duration) error {
+	allowed, _, err := cache.AllowRequest(ctx, namespace, identity, limit, window)
+	if err != nil {
+		return apperror.Wrap(code.CodeServerBusy, err, "check identity rate limit failed")
+	}
+	if !allowed {
+		return apperror.New(code.CodeTooManyRequests, code.CodeTooManyRequests.Msg())
+	}
+	return nil
 }

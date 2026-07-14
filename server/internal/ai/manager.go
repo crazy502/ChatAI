@@ -6,11 +6,20 @@ import (
 	"time"
 
 	"server/infra/metrics"
+
+	"github.com/cloudwego/eino/schema"
 )
 
 type SaveFunc func(*StoredMessage) error
 
+type LoadHistoryFunc func() ([]StoredMessage, error)
+
+const maxContextMessages = 100
+
 type Helper struct {
+	turnMu    sync.Mutex
+	hydrateMu sync.Mutex
+	hydrated  bool
 	provider  Provider        // 模型提供方
 	messages  []PromptMessage // 消息队列
 	mu        sync.RWMutex    // 读写锁，用于保护消息队列
@@ -27,6 +36,8 @@ func NewHelper(provider Provider, sessionID string) *Helper {
 }
 
 func (h *Helper) SetSaveFunc(saveFunc SaveFunc) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	h.saveFunc = saveFunc
 }
 
@@ -45,6 +56,30 @@ func (h *Helper) ReplaceMessages(history []StoredMessage) {
 	defer h.mu.Unlock()
 	//3. 替换消息队列
 	h.messages = ToPromptMessages(history)
+	h.hydrated = true
+}
+
+func (h *Helper) EnsureHydrated(load LoadHistoryFunc) error {
+	h.hydrateMu.Lock()
+	defer h.hydrateMu.Unlock()
+
+	h.mu.RLock()
+	alreadyHydrated := h.hydrated
+	h.mu.RUnlock()
+	if alreadyHydrated {
+		return nil
+	}
+
+	history, err := load()
+	if err != nil {
+		return err
+	}
+
+	h.mu.Lock()
+	h.messages = ToPromptMessages(history)
+	h.hydrated = true
+	h.mu.Unlock()
+	return nil
 }
 
 // AddMessage 添加消息到助手队列
@@ -54,33 +89,39 @@ func (h *Helper) AddMessage(content, userName string, isUser, save bool) (*Store
 	//1. 创建消息实例
 	message := NewStoredMessage(h.SessionID, userName, content, isUser)
 
+	// Persist first so failed writes never leak into the model context.
+	h.mu.RLock()
+	saveFunc := h.saveFunc
+	h.mu.RUnlock()
+	if save && saveFunc != nil {
+		if err := saveFunc(message); err != nil {
+			return nil, err
+		}
+	}
+
 	//2. 加锁并添加消息到队列
 	h.mu.Lock()
 	h.messages = append(h.messages, PromptMessage{
 		Content: content,
 		IsUser:  isUser,
 	})
+	h.hydrated = true
 	//3. 解锁
 	h.mu.Unlock()
 
 	//4. 保存消息
-	if save && h.saveFunc != nil {
-		if err := h.saveFunc(message); err != nil {
-			return nil, err
-		}
-	}
-
 	return message, nil
 }
 
 func (h *Helper) GenerateResponse(userName string, ctx context.Context, userQuestion string) (*StoredMessage, error) {
+	h.turnMu.Lock()
+	defer h.turnMu.Unlock()
+
 	if _, err := h.AddMessage(userQuestion, userName, true, true); err != nil {
 		return nil, err
 	}
 
-	h.mu.RLock()
-	messages := ToSchemaMessages(h.messages)
-	h.mu.RUnlock()
+	messages := h.contextMessages()
 
 	start := time.Now()
 	schemaMessage, err := h.provider.GenerateResponse(ctx, messages)
@@ -98,13 +139,14 @@ func (h *Helper) GenerateResponse(userName string, ctx context.Context, userQues
 }
 
 func (h *Helper) StreamResponse(userName string, ctx context.Context, cb StreamCallback, userQuestion string) (*StoredMessage, error) {
+	h.turnMu.Lock()
+	defer h.turnMu.Unlock()
+
 	if _, err := h.AddMessage(userQuestion, userName, true, true); err != nil {
 		return nil, err
 	}
 
-	h.mu.RLock()
-	messages := ToSchemaMessages(h.messages)
-	h.mu.RUnlock()
+	messages := h.contextMessages()
 
 	start := time.Now()
 	content, err := h.provider.StreamResponse(ctx, messages, cb)
@@ -123,6 +165,17 @@ func (h *Helper) StreamResponse(userName string, ctx context.Context, cb StreamC
 
 func (h *Helper) GetModelType() string {
 	return h.provider.Name()
+}
+
+func (h *Helper) contextMessages() []*schema.Message {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	start := 0
+	if len(h.messages) > maxContextMessages {
+		start = len(h.messages) - maxContextMessages
+	}
+	return ToSchemaMessages(h.messages[start:])
 }
 
 type Manager struct {

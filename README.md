@@ -26,7 +26,7 @@
 
 ![前端界面](./document/resource/前端界面.png)
 
-后台管理系统界面演示
+对话界面演示
 
 ![后台管理系统](./document/resource/对话界面.png)
 

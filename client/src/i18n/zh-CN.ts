@@ -1,0 +1,93 @@
+export const zhCN = {
+  common: {
+    brand: 'AgentGo', confirm: '确认', cancel: '取消', close: '关闭提示', logout: '退出登录',
+    continueUse: '继续使用', manualRefresh: '手动刷新', unknownError: '操作失败，请稍后重试', networkError: '连接异常，请重试'
+  },
+  app: { loading: 'AGENTGO 初始化中' },
+  ui: {
+    confirmKicker: '系统确认', inputKicker: '用户输入',
+    toast: { success: '操作成功', error: '操作失败', warning: '请注意', info: '系统提示' }
+  },
+  auth: {
+    workspaceKicker: '智能对话工作台', workspaceTitle: '让想法、提问与回答在一个自然对话界面里连续发生',
+    loginKicker: '安全访问', loginTitle: '欢迎回到 AgentGo', loginSubtitle: '使用注册邮箱登录后继续你的智能协作会话。',
+    registerKicker: '新账号申请', registerTitle: '创建你的 AgentGo 账号', registerSubtitle: '注册成功后可直接使用当前邮箱登录。',
+    qqEmail: 'QQ 邮箱', emailPlaceholder: '请输入邮箱账号', password: '密码', passwordPlaceholder: '请输入密码',
+    newPasswordPlaceholder: '请输入至少 8 位密码', confirmPassword: '确认密码', confirmPasswordPlaceholder: '请再次输入密码',
+    captcha: '验证码', captchaPlaceholder: '请输入验证码', login: '登录', verifying: '验证中...', noAccount: '还没有账号？',
+    registerNow: '立即注册', hasAccount: '已经有账号？', backToLogin: '返回登录', sending: '发送中...', getCaptcha: '获取验证码',
+    creating: '创建中...', finishRegister: '完成注册', switchLanguage: '切换语言', passwordMismatch: '两次输入的密码不一致',
+    missingLoginFields: '请输入 QQ 邮箱账号和密码', invalidQQEmail: '请输入正确的 QQ 邮箱账号', loginSuccess: '身份验证通过',
+    loginFailed: '验证失败', missingEmail: '请输入 QQ 邮箱账号', captchaSent: '验证码已发送', captchaFailed: '发送失败',
+    missingRegisterFields: '请填写所有字段', passwordTooShort: '密码长度不能少于 8 位', registerSuccess: '注册成功，已自动登录',
+    registerFailed: '注册失败', loginTitleText: 'AgentGo | 登录', registerTitleText: 'AgentGo | 注册'
+  },
+  preview: {
+    liveChat: '实时 AI 对话', userFirst: '周末想看点轻松的电影，有推荐吗？',
+    aiFirst: '如果你想放松一点，我会先推荐《帕丁顿熊2》，温暖、好笑，而且节奏很舒服。',
+    userSecond: '最好不要太烧脑，晚上只想随便看看。', aiSecond: '那《落魄大厨》也很适合，氛围轻松，还会让你看着看着就想点夜宵。',
+    userThird: '哈哈，那再来一部适合雨天宅家的。', aiThird: '如果是雨天宅家，我会想继续给你推《爱在黎明破晓前》，聊天感很强，而且越看越安静……',
+    generating: '继续生成中'
+  },
+  chat: {
+    toggleSessions: '切换会话列表', menu: '菜单', model: '模型', qwen: '通义千问', streaming: '流式响应', syncing: '同步中...',
+    syncSessions: '同步会话', adminConsole: '系统控制台', sessionMatrix: '会话矩阵', sessionList: '会话列表', newChat: '新对话',
+    search: '搜索', searchPlaceholder: '按标题筛选会话', showArchived: '显示归档', sessionSummary: '显示 {visible} / {total} 个会话',
+    includesArchived: '包含归档会话', activeOnly: '仅显示活跃会话', noMatchedSessions: '没有匹配当前关键词的会话。',
+    noSessions: '暂无历史会话，发送第一条消息后会自动创建。', pinned: '置顶', archived: '归档', rename: '改名', unpin: '取消置顶',
+    restore: '恢复', streamEnabled: '流式响应已开启', standardMode: '标准响应模式', loadingHistory: '载入历史中',
+    aiGenerating: 'AI 正在生成回复', ready: '系统就绪', emptyTitle: '从一个问题开始新的协作',
+    emptyDescription: '你可以直接提问、让 AI 总结内容，或者让它帮你梳理实现思路。', me: '我', myQuestion: '我的提问',
+    aiAssistant: 'AI 助手', generating: '生成中', failed: '失败', copy: '复制', readAloud: '朗读',
+    inputPlaceholder: '输入你的问题，回车发送，Shift + Enter 换行', sending: '发送中', send: '发送', stop: '停止生成',
+    createsSession: '发送后会自动创建新会话', syncsSession: '消息会同步到当前会话', keyboardHint: 'Enter 发送，Shift + Enter 换行',
+    draft: '新对话草稿', noSelection: '会话未选择', unnamedSession: '未命名会话', newSession: '新会话', justNow: '刚刚',
+    minutesAgo: '{count} 分钟前', hoursAgo: '{count} 小时前', daysAgo: '{count} 天前', messageCount: '{count} 条消息',
+    noHistory: '暂无历史消息', historyUnavailable: '历史暂不可用', recentlyUpdated: '最近更新 {time}', waitingHistory: '等待载入历史',
+    noLoadableHistory: '当前会话暂无可加载历史', loadHistoryFailed: '加载会话历史失败', sessionsSynced: '会话已同步', syncFailed: '同步会话失败',
+    renameTitle: '重命名会话', renamePlaceholder: '请输入新的会话名称', emptySessionName: '会话名称不能为空', renameFailed: '重命名失败',
+    renamed: '会话名称已更新', pinFailed: '更新置顶状态失败', pinnedSuccess: '会话已置顶', unpinnedSuccess: '会话已取消置顶',
+    archiveTitle: '归档当前会话？', restoreTitle: '恢复当前会话？', archiveMessage: '归档后会从默认列表隐藏，但不会删除聊天记录。',
+    restoreMessage: '恢复后该会话会重新出现在活跃会话列表中。', confirmArchive: '确认归档', confirmRestore: '确认恢复',
+    archiveFailed: '更新归档状态失败', archivedSuccess: '会话已归档', restoredSuccess: '会话已恢复', streamRequestFailed: '流式请求失败',
+    streamInterrupted: '流式连接提前结束，请重试。', responseIncomplete: '本次回复未完成，请重试。', streamFailed: '流式传输出错',
+    sendFailed: '发送失败', streamCancelled: '已停止生成', clipboardUnsupported: '当前浏览器不支持复制到剪贴板', copied: '内容已复制',
+    copyFailed: '复制失败，请检查浏览器权限', speechUnsupported: '当前浏览器不支持语音播放', speechStarted: '开始语音播报',
+    logoutTitle: '退出当前账号？', logoutMessage: '退出后将返回登录页，但不会影响后端已有会话数据。',
+    starterSummary: '帮我总结这段需求并拆出实现步骤', starterFrontend: '给我一个可执行的前端优化清单',
+    starterDebug: '帮我分析这个接口调用为什么失败', starterDocument: '把这段文档整理成结构化要点'
+  },
+  admin: {
+    monitoring: '系统监控', title: 'AgentGo 监控面板', subtitle: '集中展示请求量、错误率、平均延迟、接口状态和模型状态。',
+    globalStatus: '全局状态', currentStatus: '当前状态', lastRefresh: '最近刷新', autoRefresh: '自动刷新', backToChat: '返回对话界面',
+    refreshing: '刷新中...', refreshNow: '立即刷新', snapshot: '系统快照', overviewTitle: '系统状态概览',
+    overviewDescription: '聚合错误率、平均延迟和异常数量，用于快速判断当前系统是否正常运行。', lastUpdated: '最近更新时间',
+    abnormalRoutes: '异常接口', abnormalModels: '异常模型', refreshMode: '刷新方式', requestTrend: '请求增量趋势',
+    requestTrendNote: '展示最近采样周期内的请求变化', latencyTrend: '平均延迟趋势', latencyTrendNote: '展示最近采样周期内的平均延迟变化',
+    requestChartLabel: '请求趋势图', latencyChartLabel: '延迟趋势图', notEnoughData: '暂无足够数据，暂时无法生成趋势图。',
+    currentDelta: '当前增量 {value}', currentAverage: '当前平均 {value}', peak: '峰值 {value}', samples: '样本 {count} 个',
+    routes: '接口健康', routesNote: '按状态和请求量排序展示接口指标', models: '模型健康', modelsNote: '按模型维度汇总调用次数、错误率和延迟',
+    loadingRoutes: '正在加载接口监控数据...', noRoutes: '暂无接口监控数据。', loadingModels: '正在加载模型监控数据...', noModels: '暂无模型监控数据。',
+    endpoint: '接口', status: '状态', requestCount: '请求量', errorRate: '错误率', averageLatency: '平均延迟', model: '模型',
+    refreshSeconds: '{count} 秒刷新', everySeconds: '每 {count} 秒自动刷新', notRefreshed: '尚未刷新', justNow: '刚刚',
+    secondsAgo: '{count} 秒前', minutesAgo: '{count} 分钟前', pendingSample: '待采样', abnormal: '异常', warning: '警告', normal: '正常',
+    pendingObservation: '待观察', hasAbnormality: '存在异常', fluctuating: '存在波动', runningNormally: '运行正常', waitingData: '等待监控数据',
+    systemAbnormal: '系统存在异常', systemFluctuating: '系统存在波动', systemNormal: '系统运行正常',
+    summaryWithIssues: '错误率 {errorRate}，平均延迟 {latency}，异常接口 {routes} 个，异常模型 {models} 个。',
+    summaryInsufficient: '当前监控数据不足，暂时无法判断系统状态。', summaryNormal: '错误率 {errorRate}，平均延迟 {latency}，当前未发现明显异常。',
+    stripDanger: '当前存在异常：异常接口 {routes} 个，异常模型 {models} 个。', stripWarning: '当前存在波动：异常接口 {routes} 个，异常模型 {models} 个。',
+    stripNeutral: '当前监控数据不足，正在等待更多采样。', stripSuccess: '当前系统运行正常，未发现明显异常。',
+    totalRequests: '累计请求', totalRequestsDesc: '当前采样周期内的请求总量', totalErrors: '累计错误', totalErrorsDesc: '当前采样周期内的错误总量',
+    errorRateDesc: '错误请求占总请求的比例', latencyDesc: '请求的平均响应时间', abnormalRouteCount: '异常接口数',
+    abnormalRouteCountDesc: '当前状态异常的接口数量', abnormalModelCount: '异常模型数', abnormalModelCountDesc: '当前状态异常的模型数量',
+    forbidden: '当前账号没有管理员权限，已返回对话界面。', refreshFailed: '监控数据刷新失败，请检查后端服务状态。',
+    logoutTitle: '确认退出登录？', logoutMessage: '退出后将返回登录页，已采集的监控数据不会丢失。', noPermission: '当前账号没有管理员权限，无法进入管理页。'
+  },
+  errors: {
+    '2001': '请求参数错误', '2002': '用户已存在', '2003': '用户不存在', '2004': '邮箱或密码错误',
+    '2006': '登录状态已失效，请重新登录', '2007': '请先登录', '2008': '验证码错误', '2009': '记录不存在',
+    '2010': '密码不符合要求', '2011': '邮箱已存在', '2012': '请求过于频繁，请稍后重试', '3001': '权限不足',
+    '4001': '服务繁忙，请稍后重试', '5001': '模型不存在', '5002': '模型初始化失败', '5003': '模型调用失败'
+  },
+  route: { login: 'AgentGo | 登录', chat: 'AgentGo | 智能对话', admin: 'AgentGo | 管理监控', notFound: 'AgentGo | 页面不存在' }
+} as const

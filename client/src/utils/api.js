@@ -1,5 +1,8 @@
 ﻿import axios from 'axios'
 
+import { translate } from '../i18n'
+import { clearAuth } from './auth'
+
 export const API_BASE_URL = '/api'
 
 const normalizePath = (path) => {
@@ -17,6 +20,27 @@ const api = axios.create({
   timeout: 0
 })
 
+const AUTH_ERROR_CODES = new Set([2006, 2007])
+
+const redirectToLogin = () => {
+  clearAuth()
+  if (window.location.pathname !== '/login') {
+    window.location.assign('/login')
+  }
+}
+
+export const getApiErrorMessage = (error, fallbackKey = 'common.unknownError') => {
+  const resultCode = Number(error?.response?.data?.status_code || error?.response?.data?.error?.code || 0)
+  if (resultCode) {
+    const key = `errors.${resultCode}`
+    const translated = translate(key)
+    if (translated !== key) {
+      return translated
+    }
+  }
+  return translate(fallbackKey)
+}
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
@@ -29,12 +53,19 @@ api.interceptors.request.use(
 )
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (AUTH_ERROR_CODES.has(Number(response?.data?.status_code))) {
+      redirectToLogin()
+    }
+    return response
+  },
   (error) => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('isAdmin')
-      window.location.href = '/login'
+	const resultCode = Number(error?.response?.data?.status_code || error?.response?.data?.error?.code || 0)
+    if (error?.response?.status === 401 || AUTH_ERROR_CODES.has(resultCode)) {
+      redirectToLogin()
+    }
+	if (error instanceof Error) {
+	  error.message = getApiErrorMessage(error)
     }
     return Promise.reject(error)
   }

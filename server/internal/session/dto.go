@@ -8,16 +8,16 @@ type GetUserSessionsResponse struct {
 }
 
 type UpdateSessionTitleRequest struct {
-	SessionID string `json:"sessionId" binding:"required"`
-	Title     string `json:"title" binding:"required"`
+	SessionID string `json:"sessionId" binding:"required,max=64"`
+	Title     string `json:"title" binding:"required,max=120"`
 }
 
 type UpdateSessionPinRequest struct {
-	SessionID string `json:"sessionId" binding:"required"`
+	SessionID string `json:"sessionId" binding:"required,max=64"`
 	Pinned    bool   `json:"pinned"`
 }
 
 type UpdateSessionArchiveRequest struct {
-	SessionID string `json:"sessionId" binding:"required"`
+	SessionID string `json:"sessionId" binding:"required,max=64"`
 	Archived  bool   `json:"archived"`
 }

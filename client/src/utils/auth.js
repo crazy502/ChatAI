@@ -24,12 +24,39 @@ export const parseTokenPayload = (token) => {
   }
 }
 
+export const isTokenUsable = (token, now = Date.now()) => {
+  const payload = parseTokenPayload(token)
+  if (!payload || typeof payload.exp !== 'number') {
+    return false
+  }
+
+  const nowSeconds = Math.floor(now / 1000)
+  if (payload.exp <= nowSeconds) {
+    return false
+  }
+  if (typeof payload.nbf === 'number' && payload.nbf > nowSeconds) {
+    return false
+  }
+  return true
+}
+
+export const clearAuth = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('isAdmin')
+}
+
 export const isAdminToken = (token) => {
+  if (!isTokenUsable(token)) {
+    return false
+  }
   const payload = parseTokenPayload(token)
   return Boolean(payload?.is_admin ?? payload?.isAdmin)
 }
 
 export const getTokenUserName = (token) => {
+  if (!isTokenUsable(token)) {
+    return ''
+  }
   const payload = parseTokenPayload(token)
   return payload?.username || ''
 }

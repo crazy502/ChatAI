@@ -202,18 +202,15 @@ func (s *Service) getOrCreateHydratedHelper(ctx context.Context, userName, sessi
 	})
 
 	//3. 加载历史消息（如果需要）
-	if helper.HasMessages() {
-		return helper, nil
-	}
-
-	history, err := s.repo.GetMessagesBySessionID(sessionID)
-	if err != nil {
+	if err := helper.EnsureHydrated(func() ([]ai.StoredMessage, error) {
+		history, loadErr := s.repo.GetMessagesBySessionID(sessionID)
+		if loadErr != nil {
+			return nil, loadErr
+		}
+		return toAIStoredMessages(history), nil
+	}); err != nil {
 		return nil, apperror.Wrap(code.CodeServerBusy, err, "hydrate helper history failed").
 			WithField("session_id", sessionID)
-	}
-
-	if len(history) > 0 {
-		helper.ReplaceMessages(toAIStoredMessages(history))
 	}
 
 	return helper, nil

@@ -1,14 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { isAdminToken } from '../utils/auth'
+import { clearAuth, isAdminToken, isTokenUsable } from '../utils/auth'
+import { translate } from '../i18n'
 
 const Login = () => import(/* webpackChunkName: "auth" */ '../views/Login.vue')
 const AIChat = () => import(/* webpackChunkName: "chat" */ '../views/AIChat.vue')
 const AdminMetrics = () => import(/* webpackChunkName: "admin" */ '../views/AdminMetrics.vue')
+const NotFound = () => import(/* webpackChunkName: "not-found" */ '../views/NotFound.vue')
 
 const routes = [
   {
     path: '/',
-    redirect: () => (localStorage.getItem('token') ? '/ai-chat' : '/login')
+    redirect: () => (isTokenUsable(localStorage.getItem('token')) ? '/ai-chat' : '/login')
   },
   {
     path: '/login',
@@ -42,8 +44,20 @@ const routes = [
       requiresAdmin: true,
       title: 'AgentGo | 管理监控'
     }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: NotFound
   }
 ]
+
+const routeTitleKeys = {
+  Login: 'route.login',
+  AIChat: 'route.chat',
+  AdminMetrics: 'route.admin',
+  NotFound: 'route.notFound'
+}
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
@@ -55,13 +69,17 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
+	const authenticated = isTokenUsable(token)
+	if (token && !authenticated) {
+	  clearAuth()
+	}
 
-  if (token && (to.path === '/login' || to.path === '/register')) {
+	if (authenticated && (to.path === '/login' || to.path === '/register')) {
     next('/ai-chat')
     return
   }
 
-  if (to.matched.some((record) => record.meta.requiresAuth) && !token) {
+	if (to.matched.some((record) => record.meta.requiresAuth) && !authenticated) {
     next('/login')
     return
   }
@@ -75,7 +93,8 @@ router.beforeEach((to, from, next) => {
 })
 
 router.afterEach((to) => {
-  document.title = to.meta.title || 'AgentGo'
+	const titleKey = routeTitleKeys[to.name]
+	document.title = titleKey ? translate(titleKey) : translate('common.brand')
 })
 
 export default router

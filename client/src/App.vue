@@ -6,7 +6,7 @@
         <div class="spinner-ring"></div>
         <div class="spinner-ring"></div>
       </div>
-      <div class="loading-text">GOPHERAI INITIALIZING</div>
+      <div class="loading-text">{{ $t('app.loading') }}</div>
     </div>
 
     <router-view v-slot="{ Component, route }">
@@ -17,6 +17,7 @@
 
     <AppToastContainer />
     <AppConfirmDialog />
+    <AppInputDialog />
   </div>
 </template>
 
@@ -25,12 +26,14 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppToastContainer from './components/ui/AppToastContainer.vue'
 import AppConfirmDialog from './components/ui/AppConfirmDialog.vue'
+import AppInputDialog from './components/ui/AppInputDialog.vue'
 
 export default {
   name: 'App',
   components: {
     AppToastContainer,
-    AppConfirmDialog
+    AppConfirmDialog,
+    AppInputDialog
   },
   setup() {
     const router = useRouter()

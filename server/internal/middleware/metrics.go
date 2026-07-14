@@ -80,7 +80,7 @@ func RequestObserver() gin.HandlerFunc {
 
 		logRequest(c, routePath, latency, businessCode)
 
-		if strings.HasPrefix(path, "/api/v1/admin/metrics") || isStreamingPath(path) {
+		if strings.HasPrefix(path, "/api/v1/admin/metrics") {
 			return
 		}
 
